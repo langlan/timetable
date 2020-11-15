@@ -13,7 +13,7 @@ public class AccessingDataRestApplication {
 		SpringApplication.run(AccessingDataRestApplication.class, args);
 	}
 	
-	@RequestMapping("/t")
+	@RequestMapping("/")
 	public String index() {
 		return "{\"msg\": \"hello world \"}";
 	}
