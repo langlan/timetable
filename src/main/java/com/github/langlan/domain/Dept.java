@@ -6,14 +6,14 @@ import javax.persistence.Id;
 @Entity
 public class Dept { // 系别
 	@Id
-	private String dept;
+	private String name;
 
-	public String getDept() {
-		return dept;
+	public String getName() {
+		return name;
 	}
 
-	public void setDept(String dept) {
-		this.dept = dept;
+	public void setName(String name) {
+		this.name = name;
 	}
 
 }

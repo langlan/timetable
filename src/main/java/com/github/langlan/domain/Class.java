@@ -18,7 +18,6 @@ public class Class {
 	private String major;
 	private int year; // 入学年
 	private short no; // 班级号 
-	private String degree; // 高职/三二 , 也许放在专业里理好一些？
 	private int size; // 学生人数
 	// instructor
 
@@ -52,14 +51,6 @@ public class Class {
 
 	public void setNo(short no) {
 		this.no = no;
-	}
-
-	public String getDegree() {
-		return degree;
-	}
-
-	public void setDegree(String degree) {
-		this.degree = degree;
 	}
 
 	public int getSize() {
