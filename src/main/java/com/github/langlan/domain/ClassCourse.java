@@ -11,7 +11,8 @@ public class ClassCourse {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private long id;
 	private long classId;
-	private String termId; // 学期
+	private short termYear;
+	private byte termMonth;
 	private String courseId; // 课程名 name&id
 	private long teacherId;
 
@@ -31,12 +32,20 @@ public class ClassCourse {
 		this.classId = classId;
 	}
 
-	public String getTermId() {
-		return termId;
+	public short getTermYear() {
+		return termYear;
 	}
 
-	public void setTermId(String termId) {
-		this.termId = termId;
+	public void setTermYear(short termYear) {
+		this.termYear = termYear;
+	}
+
+	public byte getTermMonth() {
+		return termMonth;
+	}
+
+	public void setTermMonth(byte termMonth) {
+		this.termMonth = termMonth;
 	}
 
 	public String getCourseId() {
