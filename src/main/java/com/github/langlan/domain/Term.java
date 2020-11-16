@@ -13,7 +13,7 @@ public class Term {
 	public String getId() {
 		if (termMonth > 9)
 			throw new IllegalStateException("学期月份有误：" + termMonth);
-		return Short.toString(termYear) + termMonth;
+		return Short.toString(termYear) + " " + termMonth;
 	}
 
 	public short getTermYear() {
