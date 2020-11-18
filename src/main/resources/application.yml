@@ -1,0 +1,22 @@
+server:
+  address: 0.0.0.0
+  # port: 8100
+
+spring:
+   datasource:
+      url: jdbc:sqlite:F://timetable.db
+      driverClassName: org.sqlite.JDBC
+      username: 
+      password:
+   jpa:
+      database-platform: org.hibernate.dialect.SQLiteDialect
+      generate-ddl: true
+      hibernate:
+         ddl-auto: update
+      show-sql: true
+      # open-in-view=true
+
+
+#logging:
+#   level:
+    
