@@ -36,8 +36,8 @@ import com.github.langlan.domain.Teacher;
 import com.github.langlan.domain.Term;
 
 @Service
-public class ClassCourseImporer {
-	private static final Log log = LogFactory.getLog(ClassCourseImporer.class);
+public class ClassCourseImporter {
+	private static final Log log = LogFactory.getLog(ClassCourseImporter.class);
 	private @Autowired DeptRepository deptRepository;
 	private @Autowired MajorRepository majorRepository;
 	private @Autowired TeacherRepository teacherRepository;

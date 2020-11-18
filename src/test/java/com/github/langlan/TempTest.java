@@ -18,11 +18,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import com.github.langlan.dao.DeptRepository;
 import com.github.langlan.dao.MajorRepository;
 import com.github.langlan.domain.Term;
-import com.github.langlan.excel.ClassCourseImporer;
+import com.github.langlan.excel.ClassCourseImporter;
 
 @SpringBootTest
 public class TempTest {
-	private @Autowired ClassCourseImporer classCourseImporter;
+	private @Autowired ClassCourseImporter classCourseImporter;
 	private @Autowired DeptRepository deptRepository;
 	private @Autowired MajorRepository majorRepository;
 
