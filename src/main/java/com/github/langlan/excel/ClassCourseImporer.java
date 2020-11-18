@@ -11,6 +11,8 @@ import java.util.Set;
 
 import javax.transaction.Transactional;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -35,6 +37,7 @@ import com.github.langlan.domain.Term;
 
 @Service
 public class ClassCourseImporer {
+	private static final Log log = LogFactory.getLog(ClassCourseImporer.class);
 	private @Autowired DeptRepository deptRepository;
 	private @Autowired MajorRepository majorRepository;
 	private @Autowired TeacherRepository teacherRepository;
@@ -72,17 +75,19 @@ public class ClassCourseImporer {
 		assertEquals("教师姓名", titleRow.getCell(5).toString()); // F-5-教师姓名
 
 		// Although enable cache, it is id-based, so we use business-column-based
+		boolean cacheReady = false;
 		Set<String> classCourseKeys = new HashSet<>();
 		Map<String, Dept> depts = new HashMap<>();
 		Map<String, Major> majors = new HashMap<>();
 		Map<String, Class> classes = new HashMap<>();
-		classCourseRepository.findClassAndCourseCodeByTerm(term.getTermYear(), term.getTermMonth()).forEach(it -> {
-			String classKey = ((Class) it[0]).getName() + "[" + ((Class) it[0]).getDegree() + "]";
-			String courseCode = it[1].toString();
-			if (!classCourseKeys.add(classKey + "-" + courseCode))
+		classCourseRepository.findAllLogicKeyByTerm(term.getTermYear(), term.getTermMonth()).forEach(it -> {
+//			String classKey = ((Class) it[0]).getName() + "[" + ((Class) it[0]).getDegree() + "]";
+//			String courseCode = it[1].toString();
+			if (!classCourseKeys.add(it.toString()))
 				throw new IllegalStateException("现存数据重复：班级选课表（ClassCourse）：" + term.getTermYear() + "-"
-						+ term.getTermMonth() + "-" + classKey + "-" + courseCode);
+						+ term.getTermMonth() + "-" + it);
 		});
+		int count = 0;
 
 		for (int i = 1; i < sheet.getLastRowNum(); i++) {
 			Row row = sheet.getRow(i);
@@ -108,7 +113,8 @@ public class ClassCourseImporer {
 				continue; // ignore exists;
 			}
 
-			if (deptRepository == null) {
+			if (!cacheReady) {
+				cacheReady = true;
 				deptRepository.findAll().forEach(dept -> depts.put(dept.getName(), dept));
 				majorRepository.findAll()
 						.forEach(major -> majors.put(major.getName() + "[" + major.getDegree() + "]", major));
@@ -177,7 +183,9 @@ public class ClassCourseImporer {
 			classCourse.setTermYear(term.getTermYear());
 			classCourse.setTermMonth(term.getTermMonth());
 			classCourseRepository.save(classCourse);
+			count++;
 		}
+		log.info("导入班级选课记录共【" + count + "/" + sheet.getLastRowNum() + "】");
 	}
 
 }

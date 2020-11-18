@@ -12,6 +12,7 @@ import com.github.langlan.domain.ClassCourse;
 @RepositoryRestResource(collectionResourceRel = "class-course", path = "class-course")
 public interface ClassCourseRepository extends JpaRepository<ClassCourse, Long> {
 	
-	@Query("Select cc.theClass, cc.course.code From ClassCourse cc Where cc.termYear=?1 And cc.termMonth=?2")
-	List<Object[]> findClassAndCourseCodeByTerm(@Param("termYear") short termYear, @Param("termMonth") byte termMonth);
+	@Query("Select CONCAT(cc.theClass.name, '[', cc.theClass.degree, ']-', cc.course.code) "
+			+ "From ClassCourse cc Where cc.termYear=?1 And cc.termMonth=?2")
+	List<String> findAllLogicKeyByTerm(@Param("termYear") short termYear, @Param("termMonth") byte termMonth);
 }
