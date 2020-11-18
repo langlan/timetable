@@ -4,17 +4,21 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 
 @Entity
 public class ClassCourse {
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
-	private long classId;
 	private short termYear;
 	private byte termMonth;
-	private String courseId; // 课程名 name&id
-	private long teacherId;
+	@ManyToOne
+	private Class theClass;
+	@ManyToOne
+	private Course course;
+	@ManyToOne
+	private Teacher teacher;
 
 	public long getId() {
 		return id;
@@ -22,14 +26,6 @@ public class ClassCourse {
 
 	public void setId(long id) {
 		this.id = id;
-	}
-
-	public long getClassId() {
-		return classId;
-	}
-
-	public void setClassId(long classId) {
-		this.classId = classId;
 	}
 
 	public short getTermYear() {
@@ -47,21 +43,29 @@ public class ClassCourse {
 	public void setTermMonth(byte termMonth) {
 		this.termMonth = termMonth;
 	}
-
-	public String getCourseId() {
-		return courseId;
+	
+	public Class getTheClass() {
+		return theClass;
+	}
+	
+	public void setTheClass(Class theClass) {
+		this.theClass = theClass;
 	}
 
-	public void setCourseId(String courseId) {
-		this.courseId = courseId;
+	public Course getCourse() {
+		return course;
 	}
 
-	public long getTeacherId() {
-		return teacherId;
+	public void setCourse(Course course) {
+		this.course = course;
 	}
 
-	public void setTeacherId(long teacherId) {
-		this.teacherId = teacherId;
+	public Teacher getTeacher() {
+		return teacher;
+	}
+
+	public void setTeacher(Teacher teacher) {
+		this.teacher = teacher;
 	}
 
 }

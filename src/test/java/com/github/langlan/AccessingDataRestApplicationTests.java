@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package test;
+package com.github.langlan;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

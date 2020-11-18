@@ -8,14 +8,9 @@ public class Week {
 	private short termYear;
 	private byte termMonth;
 	private byte weekno;
-	private String firstDay, lastDay; // yyyyMMdd
-
 	@Id
-	public String getId() {
-		if (termMonth > 9)
-			throw new IllegalStateException("学期月份有误：" + termMonth);
-		return termYear + "0" + termMonth + "-" + (weekno > 9 ? (" ") + weekno : weekno);
-	}
+	private String firstDay; // yyyyMMdd
+	private String lastDay; // yyyyMMdd
 
 	public short getTermYear() {
 		return termYear;

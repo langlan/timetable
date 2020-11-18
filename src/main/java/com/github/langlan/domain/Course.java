@@ -1,27 +1,26 @@
 package com.github.langlan.domain;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 @Entity
 public class Course {
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long id;
+	private String code;
 	private String name; // 课程名
 	boolean trainning; // 是否是实训课
-	private byte cate; // 课程性质：公共基础|专业技能|专业技能（选）|实习环节|无
-	private byte style;// 课程类别：必修课|选修课|限定选修课|无
-	private byte checkStyle; // 考核方式：考试|考查|无
+	private String cate; // 课程性质：公共基础|专业技能|专业技能（选）|实习环节|无
+	private String style;// 课程类别：必修课|选修课|限定选修课|无
+	private String examineMethod; // 考核方式：考试|考查|无
+	private boolean labByTheory;
+	private String locationType;
 
-	public long getId() {
-		return id;
+	public String getCode() {
+		return code;
 	}
 
-	public void setId(long id) {
-		this.id = id;
+	public void setCode(String code) {
+		this.code = code;
 	}
 
 	public String getName() {
@@ -40,28 +39,44 @@ public class Course {
 		this.trainning = trainning;
 	}
 
-	public byte getCate() {
+	public String getCate() {
 		return cate;
 	}
 
-	public void setCate(byte cate) {
+	public void setCate(String cate) {
 		this.cate = cate;
 	}
 
-	public byte getStyle() {
+	public String getStyle() {
 		return style;
 	}
 
-	public void setStyle(byte style) {
+	public void setStyle(String style) {
 		this.style = style;
 	}
 
-	public byte getCheckStyle() {
-		return checkStyle;
+	public String getExamineMethod() {
+		return examineMethod;
 	}
 
-	public void setCheckStyle(byte checkStyle) {
-		this.checkStyle = checkStyle;
+	public void setExamineMethod(String examineMethod) {
+		this.examineMethod = examineMethod;
+	}
+
+	public boolean isLabByTheory() {
+		return labByTheory;
+	}
+
+	public void setLabByTheory(boolean labByTheory) {
+		this.labByTheory = labByTheory;
+	}
+
+	public String getLocationType() {
+		return locationType;
+	}
+
+	public void setLocationType(String locationType) {
+		this.locationType = locationType;
 	}
 
 }

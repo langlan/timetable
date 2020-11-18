@@ -1,8 +1,6 @@
 package com.github.langlan.domain;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
@@ -14,19 +12,18 @@ import javax.persistence.UniqueConstraint;
 })
 public class Teacher {
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long id;
+	private String code;
 	private String name;
 	private String phone;
 	private String mail;
 	private boolean female;
 
-	public long getId() {
-		return id;
+	public String getCode() {
+		return code;
 	}
 
-	public void setId(long id) {
-		this.id = id;
+	public void setCode(String code) {
+		this.code = code;
 	}
 
 	public String getName() {

@@ -15,7 +15,11 @@ public class Term {
 			throw new IllegalStateException("学期月份有误：" + termMonth);
 		return termYear + "0" + termMonth;
 	}
-	
+
+	public void setId(String id) {
+
+	}
+
 	public short getTermYear() {
 		return termYear;
 	}
@@ -31,6 +35,5 @@ public class Term {
 	public void setTermMonth(byte termMonth) {
 		this.termMonth = termMonth;
 	}
-	
-	
+
 }

@@ -1,14 +1,37 @@
 package com.github.langlan.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 
 @Entity
 public class Major { // 专业
 	@Id
-	String name;
-	String dept; // dept name&id
-	private String degree; // 高职/三二 , 也许放在专业里理好一些？
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private int id;
+	private String name;
+	private String shortName;
+	private String degree; // 高职/三二
+	@ManyToOne
+	private Dept dept;
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public Dept getDept() {
+		return dept;
+	}
+
+	public void setDept(Dept dept) {
+		this.dept = dept;
+	}
 
 	public String getName() {
 		return name;
@@ -18,12 +41,12 @@ public class Major { // 专业
 		this.name = name;
 	}
 
-	public String getDept() {
-		return dept;
+	public String getShortName() {
+		return shortName;
 	}
 
-	public void setDept(String dept) {
-		this.dept = dept;
+	public void setShortName(String shortName) {
+		this.shortName = shortName;
 	}
 
 	public String getDegree() {

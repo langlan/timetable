@@ -4,22 +4,25 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 @Entity
 @Table(uniqueConstraints = { //
-		@UniqueConstraint(columnNames = { "major", "year", "no" }) //
+		@UniqueConstraint(columnNames = { "major_id", "year", "classNo" }) //
 })
 public class Class {
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
-	private String major;
-	private int year; // 入学年
-	private short no; // 班级号 
+	@ManyToOne
+	private Major major;
+	private String name;
+	private String degree; // Major#degree
+	private short year; // 入学年
+	private byte classNo; // 班级号
 	private int size; // 学生人数
-	// instructor
 
 	public long getId() {
 		return id;
@@ -29,28 +32,44 @@ public class Class {
 		this.id = id;
 	}
 
-	public String getMajor() {
+	public Major getMajor() {
 		return major;
 	}
 
-	public void setMajor(String major) {
+	public void setMajor(Major major) {
 		this.major = major;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDegree() {
+		return degree;
+	}
+
+	public void setDegree(String degree) {
+		this.degree = degree;
 	}
 
 	public int getYear() {
 		return year;
 	}
 
-	public void setYear(int year) {
+	public byte getClassNo() {
+		return classNo;
+	}
+
+	public void setClassNo(byte no) {
+		this.classNo = no;
+	}
+
+	public void setYear(short year) {
 		this.year = year;
-	}
-
-	public short getNo() {
-		return no;
-	}
-
-	public void setNo(short no) {
-		this.no = no;
 	}
 
 	public int getSize() {
