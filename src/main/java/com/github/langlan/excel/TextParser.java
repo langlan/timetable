@@ -67,4 +67,22 @@ public interface TextParser {
 			throw new IllegalStateException("Expect [" + expect + "], but was [" + actual + "].");
 	}
 
+	Pattern INTTEGER = Pattern.compile("\\d+");
+	/** find the first digital sequence and parse */
+	public static int parseInt(String text) {
+		Matcher m = INTTEGER.matcher(text);
+		if(m.find()) {
+			Integer.parseInt(m.group());
+		}
+		return 0;
+	}
+
+	public static String firstIntStr(String text) {
+		Matcher m = INTTEGER.matcher(text);
+		if(m.find()) {
+			return m.group();
+		}
+		return null;
+	}
+
 }

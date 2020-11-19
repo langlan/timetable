@@ -19,10 +19,12 @@ import com.github.langlan.dao.DeptRepository;
 import com.github.langlan.dao.MajorRepository;
 import com.github.langlan.domain.Term;
 import com.github.langlan.excel.ClassCourseImporter;
+import com.github.langlan.excel.RoomImporter;
 
 @SpringBootTest
 public class TempTest {
 	private @Autowired ClassCourseImporter classCourseImporter;
+	private @Autowired RoomImporter roomImporter;
 	private @Autowired DeptRepository deptRepository;
 	private @Autowired MajorRepository majorRepository;
 
@@ -60,19 +62,18 @@ public class TempTest {
 	}
 
 	@Test
-	public void testImport教学任务() throws EncryptedDocumentException, IOException{
+	public void testImportClassCourses() throws EncryptedDocumentException, IOException {
 		Term term = new Term();
-		term.setTermYear((short)2020);
+		term.setTermYear((short) 2020);
 		term.setTermMonth((byte) 9);
-		File file = new File("C:/Users/langlan/Desktop/课表/教学任务.xls");
+		File file = new File("C:/Users/langlan/Desktop/课表/basic-class-course.xls");
 		classCourseImporter.importFile(term, file);
-		deptRepository.findAll().forEach(dept->{
-			System.out.println(dept.getId() + "-" + dept.getName());
-		});;
-		majorRepository.findAll().forEach(major->{
-			System.out.println(major.getId() + "-" + major.getName() + "-" + major.getDegree());
-		});
-		
+	}
+
+	@Test
+	public void testImportRooms() throws EncryptedDocumentException, IOException {
+		File file = new File("C:/Users/langlan/Desktop/课表/basic-rooms.xlsx");
+		roomImporter.importFile(file);
 	}
 
 }
