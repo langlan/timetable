@@ -1,6 +1,7 @@
 package com.github.langlan.excel;
 
 import static com.github.langlan.excel.TextParser.assertEquals;
+import static com.github.langlan.excel.TextParser.handleMalFormedDegree;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,7 +75,7 @@ public class ClassCourseImporter {
 		assertEquals("教师职工号", titleRow.getCell(4).toString()); // E-4-教师职工号
 		assertEquals("教师姓名", titleRow.getCell(5).toString()); // F-5-教师姓名
 
-		// Although enable cache, it is id-based, so we use business-column-based
+		// Although enable caching, it is id-based, so we use logical-key witch is business-columns-based
 		boolean cacheReady = false;
 		Set<String> classCourseKeys = new HashSet<>();
 		Map<String, Dept> depts = new HashMap<>();
@@ -84,8 +85,8 @@ public class ClassCourseImporter {
 //			String classKey = ((Class) it[0]).getName() + "[" + ((Class) it[0]).getDegree() + "]";
 //			String courseCode = it[1].toString();
 			if (!classCourseKeys.add(it.toString()))
-				throw new IllegalStateException("现存数据重复：班级选课表（ClassCourse）：" + term.getTermYear() + "-"
-						+ term.getTermMonth() + "-" + it);
+				throw new IllegalStateException(
+						"现存数据重复：班级选课表（ClassCourse）：" + term.getTermYear() + "-" + term.getTermMonth() + "-" + it);
 		});
 		int count = 0;
 
@@ -106,8 +107,9 @@ public class ClassCourseImporter {
 
 			String classCourseKey = classNameWithDegree + "-" + courseCode;
 			String deptKey = deptName;
-			String majorKey = majorNameWithDegree;
-			String classKey = classNameWithDegree;
+			String majorKey = majorNameWithDegree = handleMalFormedDegree(majorNameWithDegree);
+			String classKey = classNameWithDegree = handleMalFormedDegree(classNameWithDegree); 
+			// seems like no malformed with className happens, but still...
 
 			if (classCourseKeys.contains(classCourseKey)) {
 				continue; // ignore exists;
@@ -116,6 +118,8 @@ public class ClassCourseImporter {
 			if (!cacheReady) {
 				cacheReady = true;
 				deptRepository.findAll().forEach(dept -> depts.put(dept.getName(), dept));
+				// majors = StreamSupport.stream(majorRepository.findAll().spliterator(), false).collect(
+				// Collectors.toMap(major -> major.getName() + "[" + major.getDegree() + "]", major -> major));
 				majorRepository.findAll()
 						.forEach(major -> majors.put(major.getName() + "[" + major.getDegree() + "]", major));
 				classRepository.findAll()

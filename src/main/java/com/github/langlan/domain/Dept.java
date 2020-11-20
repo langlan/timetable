@@ -11,6 +11,15 @@ public class Dept { // 系别
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
 	private String name;
+	private String shortName;
+	private String type;
+
+	public Dept() {
+	}
+
+	public Dept(String name) {
+		this.name = name;
+	}
 
 	public int getId() {
 		return id;
@@ -26,6 +35,22 @@ public class Dept { // 系别
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getShortName() {
+		return shortName;
+	}
+
+	public void setShortName(String shortName) {
+		this.shortName = shortName;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
 	}
 
 }
