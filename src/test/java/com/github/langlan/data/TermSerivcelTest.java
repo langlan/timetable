@@ -17,7 +17,7 @@ public class TermSerivcelTest {
 	public static final byte TERM_MONTH = 9;
 	public static final Date FIRST_WEEK = Dates.of(TERM_YEAR, TERM_MONTH, 7);
 	public static final int NUMBER_OF_WEEKS = 17;
-	public static Term term = Term.of(TERM_YEAR, TERM_MONTH);
+	public static final Term TERM = Term.of(TERM_YEAR, TERM_MONTH);
 
 	@Test
 	public void testInitWeekAndDate() {

@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.github.langlan.domain.Term;
 import com.github.langlan.excel.ClassCourseImporter;
 import com.github.langlan.excel.RoomImporter;
 import com.github.langlan.excel.ScheduleImporter;
@@ -23,11 +22,8 @@ public class ImportExcelTest {
 
 	@Test
 	public void testImportClassCourses() throws EncryptedDocumentException, IOException {
-		Term term = new Term();
-		term.setTermYear((short) 2020);
-		term.setTermMonth((byte) 9);
 		File file = new File("C:/Users/langlan/Desktop/课表/basic-class-course.xls");
-		classCourseImporter.importFile(term, file);
+		classCourseImporter.importFile(TermSerivcelTest.TERM, file);
 	}
 
 	@Test
@@ -38,10 +34,7 @@ public class ImportExcelTest {
 
 	@Test
 	public void testImportScheduleOfTheoryCourse() throws EncryptedDocumentException, IOException {
-		Term term = new Term();
-		term.setTermYear((short) 2020);
-		term.setTermMonth((byte) 9);
 		File file = new File("schedule-theory-1.xlsx");
-		scheduleImporter.importFile(term, file);
+		scheduleImporter.importFile(TermSerivcelTest.TERM, file);
 	}
 }
