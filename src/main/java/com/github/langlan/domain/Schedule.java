@@ -5,11 +5,15 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
+@Table(uniqueConstraints = {
+		@UniqueConstraint(columnNames = { "class_course_id", "weekno", "dayOfWeek", "timeStart", "timeEnd" }) })
 @Entity
 public class Schedule {
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 	@ManyToOne
 	private ClassCourse classCourse;
@@ -43,7 +47,7 @@ public class Schedule {
 	public void setWeekno(byte weekno) {
 		this.weekno = weekno;
 	}
-	
+
 	public byte getDayOfWeek() {
 		return dayOfWeek;
 	}

@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import com.github.langlan.dao.ClassCourseRepository;
 import com.github.langlan.dao.ScheduleRepository;
+import com.github.langlan.domain.Class;
 import com.github.langlan.domain.ClassCourse;
 import com.github.langlan.domain.Schedule;
 import com.github.langlan.domain.Term;
@@ -62,7 +63,7 @@ public class ScheduleImporter {
 		String weekWords = "一二三四五六";
 
 		Row headerRow = sheet.getRow(headerRowIndex);
-		int classColIndex = -1, success = 0;
+		int classColIndex = -1;
 		if (headerRow == null) {
 			log.warn("ignore sheet【" + sheet.getSheetName() + "】");
 			return;
@@ -88,18 +89,38 @@ public class ScheduleImporter {
 		}
 
 		List<Object[]> all = classCourseRepository.findAllWithKeyByTerm(term.getTermYear(), term.getTermMonth());
-		Map<String, ClassCourse> indexed = all.parallelStream()
+		Map<String, ClassCourse> indexed = all.stream()
 				.collect(Collectors.toMap(it -> it[0].toString(), it -> (ClassCourse) it[1]));
 		if (all.size() != indexed.size())
-			throw new IllegalStateException("发现现在表中存在重复数据！");
+			throw new IllegalStateException("发现现存【班级选课表】中存在重复数据！");
 
+		int imported = 0, total = 0;
 		for (int rowIndex = dataFirstRowIndex; rowIndex < sheet.getLastRowNum(); rowIndex++) {
 			Row row = sheet.getRow(rowIndex);
+			total++;
 			// parse class
 			String classNameWithDegree = handleMalFormedDegree(cellString(row.getCell(classColIndex)));
 			if (classNameWithDegree.isEmpty())
 				continue;
 
+			Class pc = TextParser.parseClass(classNameWithDegree);
+			// 因每行为一个班级课表，故幂等/防重导策略：
+			// 1. 当发现有该班级的课程安排时，忽略。【暂时采用】
+			// 2. 删除已有班级的课程安排数据，而后正常导入
+			// 2.1 优点：支持/适合【修改导入文件后重新导入的情景】
+			// 2.2 缺点：在数据未曾修改时，浪费 id
+			// 3. 全部清空，全量导入
+			// 3.1 优点：适合【测试场景】、【全量重导需求（排课功能脱离或表表隔离）】
+			if (scheduleRespository.countByClassAndTerm(pc.getName(), pc.getDegree(), term.getTermYear(), term.getTermMonth()) > 0) {
+				log.info("发现已存在班级的排课信息，忽略该班级 @【" + classNameWithDegree + "】");
+				continue;
+			}
+			
+			// TODO: TEPM ignore non-mapped class-course for class-18 补充数据?
+			if (classNameWithDegree.contains("18"))
+				continue;
+			
+			imported ++;
 			for (int colIndex = 0; colIndex < timeInfos.length; colIndex++) {
 				TimeInfo timeInfo = timeInfos[colIndex]; // column Index.
 				String scheduleText;
@@ -121,13 +142,10 @@ public class ScheduleImporter {
 					String classCourseKey = classNameWithDegree + "-" + sc.course;
 					ClassCourse classCourse = indexed.get(classCourseKey);
 
-					// TODO: TEPM ignore non-mapped class-course for class-18 补充数据?
 					if (classCourse == null) {
-						if (classCourseKey.contains("18"))
-							continue;
 						throw new IllegalStateException("无法找到【班级选课】记录：" + classCourseKey);
 					}
-					
+
 					// validate teacher-name.
 					if (!classCourse.getTeacher().getName().equals(sc.teacher)) { // validate
 						log.warn("正导入的课程教师名与现存数据不匹配：" + "在导【" + sc.teacher + "】 VS 已有【"
@@ -137,11 +155,11 @@ public class ScheduleImporter {
 					TimeRange times = sc.timeRange;
 					byte weeknoStart = times.weeknoStart, weeknoEnd = times.weeknoEnd;
 					byte timeStart = times.timeStart, timeEnd = times.timeEnd;
-					
+
 					// try create schedule records and save.
 					for (byte weekno = weeknoStart; weekno <= weeknoEnd; weekno++) {
 						if (times.oddWeekOnly != null && (weekno % 2 == 0 == times.oddWeekOnly)) {
-							log.info("仅" + (times.oddWeekOnly ? "单" : "双") + "数周，排除：" + weekno);
+							log.debug("仅" + (times.oddWeekOnly ? "单" : "双") + "数周，排除：" + weekno);
 							continue; // exclude even when odd-only, or exclude odd when even-only
 						}
 						Schedule schedule = new Schedule();
@@ -157,17 +175,15 @@ public class ScheduleImporter {
 						schedule.setTimeStart(timeStart);
 						schedule.setTimeEnd(timeEnd);
 						schedule.setRoom(sc.room);
-						// scheduleRespository.save(schedule);
+						scheduleRespository.save(schedule);
 						// TODO: set date based on term:weekno+dayOfweek; initialize week & date table if necessary.
 						// TODO: mapping room? check for non-unique named room in schedule.
 					}
 				}
 
 			}
-			success++;
 		}
-		log.info("成功导入【" + success + "/" + (sheet.getLastRowNum() - dataFirstRowIndex + 1) + "】行，@【"
-				+ sheet.getSheetName() + "】");
+		log.info("成功导入【" + imported + "/" + total + "】行，@【" + sheet.getSheetName() + "】");
 
 	}
 }

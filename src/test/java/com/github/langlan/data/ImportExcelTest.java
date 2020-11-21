@@ -34,7 +34,10 @@ public class ImportExcelTest {
 
 	@Test
 	public void testImportScheduleOfTheoryCourse() throws EncryptedDocumentException, IOException {
-		File file = new File("schedule-theory-1.xlsx");
+		File file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-1.xlsx");
+		scheduleImporter.importFile(TermSerivcelTest.TERM, file);
+		file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-2.xlsx");
 		scheduleImporter.importFile(TermSerivcelTest.TERM, file);
 	}
+
 }
