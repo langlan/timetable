@@ -115,17 +115,62 @@ public interface TextParser {
 		return text.trim();
 	}
 
-	static final Pattern timeRangePattern = Pattern.compile("(\\d+)-(\\d+)\\((\\d+),(\\d+)\\)");
+	// ========== Schedule ============
+	static final Pattern TIME_RANGE = Pattern.compile("(\\d+)(-(\\d+))?(单|双)?\\((\\d+),(\\d+)\\)");
 
-	public static byte[] parseTimeRange(String timeRange) {
-		Matcher m = timeRangePattern.matcher(timeRange);
+	public class TimeRange {
+		public byte weeknoStart, weeknoEnd;
+		public byte timeStart, timeEnd;
+		/** true: odd week only | false: even week only | null: no exclusion. */
+		public Boolean oddWeekOnly;
+	}
+
+	public class ScheduledCourse {
+		String course;
+		TimeRange timeRange;
+		String room;
+		String teacher;
+	}
+
+	public static TimeRange parseTimeRange(String timeRange) {
+		Matcher m = TIME_RANGE.matcher(timeRange);
 		if (m.find()) {
-			byte[] ret = new byte[4];
-			for (int i = 0; i < 4; i++)
-				ret[i] = Byte.parseByte(m.group(i + 1));
+			TimeRange ret = new TimeRange();
+			ret.weeknoStart = Byte.parseByte(m.group(1));
+			ret.weeknoEnd = m.group(3) == null ? ret.weeknoStart : Byte.parseByte(m.group(3));
+			if(m.group(4)!=null) {
+				ret.oddWeekOnly = m.group(4).equals("单");
+			}
+			
+			ret.timeStart = Byte.parseByte(m.group(5));
+			ret.timeEnd = Byte.parseByte(m.group(6));
 			return ret;
 		}
 		return null;
 	}
 
+	/**
+	 * When multiple, split by line break.
+	 * 
+	 * @param text (courseName<>timeRange<>roomName<>teacherName)+
+	 * @return an array of schedule-info
+	 */
+	public static ScheduledCourse[] parseSchedule(String text) {
+		String lineBreakPattern = "(\\s*)?[\r\n]+(\\s*)?";
+		String[] lines = text.split(lineBreakPattern);
+		ScheduledCourse[] ret = new ScheduledCourse[lines.length];
+		for (int i = 0; i < lines.length; i++) {
+			String line = lines[i];
+			String[] values = line.split("<>");
+			if (values.length != 4)
+				throw new IllegalArgumentException("import.excel.schedule :" + line);
+			ScheduledCourse schedule = new ScheduledCourse();
+			schedule.course = values[0];
+			schedule.timeRange = parseTimeRange(values[1]);
+			schedule.room = values[2];
+			schedule.teacher = values[3];
+			ret[i] = schedule;
+		}
+		return ret;
+	}
 }

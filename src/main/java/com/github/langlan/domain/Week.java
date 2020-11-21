@@ -2,8 +2,11 @@ package com.github.langlan.domain;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "termYear", "termMonth", "weekno" }))
 public class Week {
 	private short termYear;
 	private byte termMonth;

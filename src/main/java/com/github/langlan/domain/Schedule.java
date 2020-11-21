@@ -1,18 +1,20 @@
 package com.github.langlan.domain;
 
+import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.ManyToOne;
 
-@Table
+@Entity
 public class Schedule {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private long id;
-	private long classCourseId;
+	@ManyToOne
+	private ClassCourse classCourse;
 	// 时间
-	private byte weekno;
+	private byte weekno, dayOfWeek;
 	private String date;
 	private byte timeStart, timeEnd; // 起时课时
 	// 地点
@@ -26,12 +28,12 @@ public class Schedule {
 		this.id = id;
 	}
 
-	public long getClassCourseId() {
-		return classCourseId;
+	public ClassCourse getClassCourse() {
+		return classCourse;
 	}
 
-	public void setClassCourseId(long classCourseId) {
-		this.classCourseId = classCourseId;
+	public void setClassCourse(ClassCourse classCourse) {
+		this.classCourse = classCourse;
 	}
 
 	public byte getWeekno() {
@@ -40,6 +42,14 @@ public class Schedule {
 
 	public void setWeekno(byte weekno) {
 		this.weekno = weekno;
+	}
+	
+	public byte getDayOfWeek() {
+		return dayOfWeek;
+	}
+
+	public void setDayOfWeek(byte dayOfWeek) {
+		this.dayOfWeek = dayOfWeek;
 	}
 
 	public String getDate() {

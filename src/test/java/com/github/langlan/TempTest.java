@@ -3,7 +3,6 @@ package com.github.langlan;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -12,22 +11,11 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
-import com.github.langlan.dao.DeptRepository;
-import com.github.langlan.dao.MajorRepository;
-import com.github.langlan.domain.Term;
-import com.github.langlan.excel.ClassCourseImporter;
-import com.github.langlan.excel.RoomImporter;
+import com.github.langlan.util.Dates;
+import com.github.langlan.util.Dates.CalenderWrapper;
 
-@SpringBootTest
 public class TempTest {
-	private @Autowired ClassCourseImporter classCourseImporter;
-	private @Autowired RoomImporter roomImporter;
-	private @Autowired DeptRepository deptRepository;
-	private @Autowired MajorRepository majorRepository;
-
 	@Test
 	public void test() throws IOException {
 		String filename = "C:/Users/langlan/Desktop/课表/实训课表/20-21-1工程系实训课表（2020.10.15）.xlsx";
@@ -60,20 +48,5 @@ public class TempTest {
 		}
 		System.out.println(sb);
 	}
-
-	@Test
-	public void testImportClassCourses() throws EncryptedDocumentException, IOException {
-		Term term = new Term();
-		term.setTermYear((short) 2020);
-		term.setTermMonth((byte) 9);
-		File file = new File("C:/Users/langlan/Desktop/课表/basic-class-course.xls");
-		classCourseImporter.importFile(term, file);
-	}
-
-	@Test
-	public void testImportRooms() throws EncryptedDocumentException, IOException {
-		File file = new File("C:/Users/langlan/Desktop/课表/basic-rooms.xlsx");
-		roomImporter.importFile(file);
-	}
-
+	
 }
