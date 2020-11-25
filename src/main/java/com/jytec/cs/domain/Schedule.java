@@ -8,8 +8,9 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Table(uniqueConstraints = {
-		// @UniqueConstraint(columnNames = { "the_class_id", "course_id", "termYear", "termMonth", "weekno", "dayOfWeek", "timeStart", "timeEnd" }) 
-		})
+		// @UniqueConstraint(columnNames = { "the_class_id", "course_id", "termYear", "termMonth", "weekno",
+		// "dayOfWeek", "timeStart", "timeEnd" })
+})
 @Entity
 public class Schedule {
 	@Id
@@ -29,6 +30,8 @@ public class Schedule {
 	private byte weekno, dayOfWeek;
 	private String date;
 	private byte timeStart, timeEnd; // 起止课时
+	// Other
+	private String trainingType; // 非实训|校内实训|企业实训
 
 	public long getId() {
 		return id;
@@ -125,4 +128,13 @@ public class Schedule {
 	public void setSite(Site site) {
 		this.site = site;
 	}
+
+	public String getTrainingType() {
+		return trainingType;
+	}
+
+	public void setTrainingType(String trainingType) {
+		this.trainingType = trainingType;
+	}
+
 }

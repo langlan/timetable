@@ -173,10 +173,12 @@ public class ClassCourseImporter {
 			// find or create teacher
 			String[] teacherNames = _teacherNames.split("/");
 			Teacher teacher = getOrCreateTeacher(teacherCode, teacherNames[0]);
+			// reset code for auto-create before.
 			if (!teacherCode.equals(teacher.getCode())) {
 				teacher.setCode(teacherCode);
 				teacherRepository.save(teacher);
 			}
+			// auto-create later if necessary
 			for (int ti = 1; ti < teacherNames.length; ti++) {
 				otherTeacherNames.add(teacherNames[ti]);
 			}

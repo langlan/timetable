@@ -1,5 +1,6 @@
 package com.jytec.cs.excel;
 
+import static com.jytec.cs.excel.TextParser.atLocaton;
 import static com.jytec.cs.excel.TextParser.cellString;
 
 import java.io.File;
@@ -38,6 +39,7 @@ import com.jytec.cs.excel.TextParser.TimeRange;
 
 @Service
 public class ScheduleImporter {
+	public static final String TRAININGTYPE_NON = "非实训";
 	private static final Log log = LogFactory.getLog(ScheduleImporter.class);
 	private @Autowired ClassCourseRepository classCourseRepository;
 	// private @Autowired ClassRepository classRepository;
@@ -59,12 +61,14 @@ public class ScheduleImporter {
 		}
 	}
 
+	/** Time information from header */
 	class TimeInfo {
 		byte dayOfWeek, timeStart, timeEnd;
 	}
 
+	// TODO: Preview for importing.
 	protected void doImport(Term term, int classYear, Sheet sheet) {
-		int headerRowIndex = 1, dataFirstRowIndex = 2;
+		int headerRowIndex = 1, dataFirstRowIndex = headerRowIndex + 1;
 		Pattern timePattern = Pattern.compile("([一二三四五六])/(\\d+)-(\\d+)");
 		String weekWords = "一二三四五六";
 
@@ -78,16 +82,15 @@ public class ScheduleImporter {
 		int classColIndex = -1;
 		TimeInfo[] timeInfos = new TimeInfo[headerRow.getLastCellNum()];
 		for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-			Cell cell = headerRow.getCell(i);
-			String header = TextParser.cellString(cell);
+			Cell headerCell = headerRow.getCell(i);
+			String header = TextParser.cellString(headerCell);
 
 			if ("课表信息".equals(header)) {
 				classColIndex = i;
 			} else if (header.indexOf("/") > 0) {
 				Matcher m = timePattern.matcher(header);
 				if (!m.find()) // TODO: use MessageSource?
-					throw new IllegalStateException("未识别的表头【" + header + "】，@Sheet【" + sheet.getSheetName() + "】, 行：【"
-							+ headerRow.getRowNum() + 1 + "】");
+					throw new IllegalStateException("未识别的表头【" + header + "】" + TextParser.atLocaton(headerCell));
 				timeInfos[i] = new TimeInfo();
 				timeInfos[i].dayOfWeek = (byte) (weekWords.indexOf(m.group(1)) + 1);
 				timeInfos[i].timeStart = Byte.parseByte(m.group(2));
@@ -102,17 +105,17 @@ public class ScheduleImporter {
 			throw new IllegalStateException("发现现存【班级选课表】中存在重复数据！");
 
 		String classYearFilter = Integer.toString(classYear % 2000);
-		int imported = 0, total = 0;
+		int imported = 0, totalRow = 0;
 		for (int rowIndex = dataFirstRowIndex; rowIndex < sheet.getLastRowNum(); rowIndex++) {
 			Row row = sheet.getRow(rowIndex);
 			Cell cell = row.getCell(classColIndex);
-			total++;
+			totalRow++;
 			// parse class
 			String classNameWithDegree = TextParser.handleMalFormedDegree(cellString(cell));
 			if (classNameWithDegree.isEmpty())
 				continue;
 			if (!classNameWithDegree.contains(classYearFilter)) {
-				log.debug("忽略班级：" + classNameWithDegree);
+				log.info("忽略班级：【" + classNameWithDegree + "】" + atLocaton(row));
 				continue;
 			}
 
@@ -125,9 +128,9 @@ public class ScheduleImporter {
 			// 2.2 缺点：在数据未曾修改时，浪费 id
 			// 3. 全部清空，全量导入
 			// 3.1 优点：适合【测试场景】、【全量重导需求（排课功能脱离或表表隔离）】
-			if (scheduleRespository.countByClassAndTerm(pc.getName(), pc.getDegree(), term.getTermYear(),
+			if (scheduleRespository.countNonTrainingByClassAndTerm(pc.getName(), pc.getDegree(), term.getTermYear(),
 					term.getTermMonth()) > 0) {
-				log.info("发现已存在班级的排课信息，忽略该班级 @【" + classNameWithDegree + "】");
+				log.info("忽略班级（已有非实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(row));
 				continue;
 			}
 
@@ -145,8 +148,7 @@ public class ScheduleImporter {
 				try {
 					scs = TextParser.parseSchedule(scheduleText);
 				} catch (Exception e) {
-					throw new IllegalStateException(
-							"课表数据格式有误【" + scheduleText + "】，@sheet: " + sheet.getSheetName() + cell.getAddress(), e);
+					throw new IllegalStateException("课表数据格式有误【" + scheduleText + "】" + atLocaton(scheduledCell));
 				}
 
 				// deal with parsed schedule
@@ -168,29 +170,43 @@ public class ScheduleImporter {
 						teacher = classCourse.getTeacher();
 					} else {
 						if (!classCourse.getTeacherNames().contains(sc.teacher)) {
-							log.warn("正导入的课程教师名与现存数据不匹配：" + "在导【" + sc.teacher + "】 VS 已有【"
-									+ classCourse.getTeacherNames() + "】" + classCourseKey);
+							String msg = "课程教师名与选课数据不匹配：" + "在导【" + sc.teacher + "】 VS 选课【"
+									+ classCourse.getTeacherNames() + "】@" + classCourseKey;
+							log.warn(msg);
 						}
 						teacher = teacherRepository.findByName(sc.teacher).orElseGet(() -> {
-							throw new IllegalStateException("找不到教师【" + sc.teacher + "】【" + scheduleText + "】@sheet:"
-									+ sheet.getSheetName() + ": " + scheduledCell.getAddress());
+							String msg = "找不到教师【" + sc.teacher + "】【" + scheduleText + "】" + atLocaton(scheduledCell);
+							// throw new IllegalStateException(msg);
+							log.warn(msg);
+							Teacher _teacher = new Teacher();
+							_teacher.setName(sc.teacher);
+							_teacher.setCode("T" + sc.teacher); // marker: auto-create.
+							return teacherRepository.save(_teacher);
 						});
 					}
 
 					// locate site
-					// TODO. name is not actually a key. but for theory class, it maybe...
+					// TODO. name is not actually a unique key. but for theory course, it maybe...
 					site = siteRepository.findUniqueByName(sc.site).orElseGet(() -> {
-						String warn = "找不到上课地点【" + sc.site + "】【" + scheduleText + "】@sheet:" + sheet.getSheetName()
-								+ ": " + scheduledCell.getAddress();
-						// log.warn);
-						return null;
+						String msg = "找不到上课地点【" + sc.site + "】【" + scheduleText + "】" + atLocaton(scheduledCell);
+						log.warn(msg);
 						// throw new IllegalStateException(warn);
+						Site _site = new Site();
+						_site.setName(sc.site);
+						_site.setCode("T" + sc.site); // marker: auto-create.
+						return siteRepository.save(_site);
 					});
+
+					if (timeStart != timeInfo.timeStart || timeEnd != timeInfo.timeEnd) {
+						throw new IllegalStateException("课程时间与表头时间不匹配：表头【" + timeStart + "," + timeEnd + "】，当前【"
+								+ timeInfo.timeStart + "," + timeInfo.timeEnd + "】" + atLocaton(scheduledCell));
+					}
 
 					// try create schedule records and save.
 					for (byte weekno = weeknoStart; weekno <= weeknoEnd; weekno++) {
-						if (times.oddWeekOnly != null && (weekno % 2 == 0 == times.oddWeekOnly)) {
-							log.debug("仅" + (times.oddWeekOnly ? "单" : "双") + "数周，排除：" + weekno);
+						if (times.oddWeekOnly != null && ((weekno % 2 == 0) == times.oddWeekOnly)) {
+							log.debug("仅" + (times.oddWeekOnly ? "单" : "双") + "数周，排除：" + weekno
+									+ atLocaton(scheduledCell));
 							continue; // exclude even when odd-only, or exclude odd when even-only
 						}
 						Schedule schedule = new Schedule();
@@ -202,11 +218,6 @@ public class ScheduleImporter {
 						schedule.setTeacher(teacher);
 						schedule.setWeekno(weekno);
 						schedule.setDayOfWeek(timeInfo.dayOfWeek);
-						if (timeStart != timeInfo.timeStart || timeEnd != timeInfo.timeEnd) {
-							throw new IllegalStateException(
-									"课程时间与表头时间不匹配：表头【" + timeStart + "," + timeEnd + "】，当前【" + timeInfo.timeStart + ","
-											+ timeInfo.timeEnd + "】行【" + rowIndex + "】列【" + colIndex + "】@Sheet【】");
-						}
 						// schedule.setDate(date);
 						schedule.setTimeStart(timeStart);
 						schedule.setTimeEnd(timeEnd);
@@ -218,7 +229,8 @@ public class ScheduleImporter {
 
 			}
 		}
-		log.info("成功导入【" + imported + "/" + total + "】行，@【" + sheet.getSheetName() + "】");
-
+		log.info("成功导入【" + imported + "/" + totalRow + "】行，@【" + sheet.getSheetName() + "】");
+		// Should it be called through other UI to keep data-import and date-build independent. 
+		scheduleRespository.updateDateByTerm(term.getTermYear(), term.getTermMonth());
 	}
 }

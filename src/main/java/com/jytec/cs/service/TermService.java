@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import com.jytec.cs.dao.DateRepository;
+import com.jytec.cs.dao.ScheduleRepository;
 import com.jytec.cs.dao.TermRepository;
 import com.jytec.cs.dao.WeekRepository;
 import com.jytec.cs.domain.Term;
@@ -27,6 +28,7 @@ public class TermService {
 	private @Autowired TermRepository termRepository;
 	private @Autowired WeekRepository weekRepository;
 	private @Autowired DateRepository dateRepository;
+	private @Autowired ScheduleRepository scheduleRepository;
 
 	/**
 	 * Generate or complete the DATA for [Term, Week, Date].
@@ -43,11 +45,11 @@ public class TermService {
 
 		CalenderWrapper cw = Dates.wrapper().letMondayFirst().with(new SimpleDateFormat("yyyyMMdd"));
 		cw.go(firstWeek);
-		
+
 		// TODO: delete existing weeks and dates
-		// or rest 
-		//    week[termYear, termMonth, weekno]
-		//    date[weekno]
+		// or rest
+		// week[termYear, termMonth, weekno]
+		// date[weekno]
 		// firstWeek = weekRepository.findById(fomatter.format(theMondyOfFirstWeek)).orElse(other);
 		for (int i = 0; i < numberOfWeeks; i++) {
 			Week week = new Week();
@@ -73,11 +75,12 @@ public class TermService {
 
 			// cw.addWeek(1); already go forward in day-loop
 		}
+		log.info("Count for rebuilding schedule date: " + rebuildScheduleDate(term));
 	}
-	
+
 	@Transactional
-	public void rebuildScheduleDate(Term term) {
-		
+	public int rebuildScheduleDate(Term term) {
+		return scheduleRepository.updateDateByTerm(term.getTermYear(), term.getTermMonth());
 	}
 
 	@Transactional

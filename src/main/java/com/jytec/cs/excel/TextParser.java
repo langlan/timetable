@@ -4,6 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
 
 import com.jytec.cs.domain.Class;
 import com.jytec.cs.domain.Major;
@@ -138,10 +139,10 @@ public interface TextParser {
 			TimeRange ret = new TimeRange();
 			ret.weeknoStart = Byte.parseByte(m.group(1));
 			ret.weeknoEnd = m.group(3) == null ? ret.weeknoStart : Byte.parseByte(m.group(3));
-			if(m.group(4)!=null) {
+			if (m.group(4) != null) {
 				ret.oddWeekOnly = m.group(4).equals("单");
 			}
-			
+
 			ret.timeStart = Byte.parseByte(m.group(5));
 			ret.timeEnd = Byte.parseByte(m.group(6));
 			return ret;
@@ -172,5 +173,13 @@ public interface TextParser {
 			ret[i] = schedule;
 		}
 		return ret;
+	}
+
+	public static String atLocaton(Row row) {
+		return "@Sheet【" + row.getSheet().getSheetName() + "】行【" + (row.getRowNum() + 1) + "】";
+	}
+
+	public static String atLocaton(Cell cell) {
+		return "@Sheet【" + cell.getSheet().getSheetName() + "】单元格【" + cell.getAddress() + "】";
 	}
 }

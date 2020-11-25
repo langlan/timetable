@@ -8,7 +8,6 @@ public class Course {
 	@Id
 	private String code;
 	private String name; // 课程名
-	boolean training; // 是否是实训课
 	private String cate; // 课程性质：公共基础|专业技能|专业技能（选）|实习环节|无
 	private String style;// 课程类别：必修课|选修课|限定选修课|无
 	private String examineMethod; // 考核方式：考试|考查|无
@@ -29,14 +28,6 @@ public class Course {
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	public boolean isTraining() {
-		return training;
-	}
-
-	public void setTraining(boolean training) {
-		this.training = training;
 	}
 
 	public String getCate() {
