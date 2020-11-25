@@ -18,7 +18,7 @@ public class Room {
 	private String name;
 	private String shortName;
 	private String type; // 标准教室|专业机房|...
-	private int capcity;
+	private int capacity;
 	@ManyToOne
 	private Dept dept; // 最终指派
 	private String multimedia;
@@ -73,12 +73,12 @@ public class Room {
 		this.type = type;
 	}
 
-	public int getCapcity() {
-		return capcity;
+	public int getCapacity() {
+		return capacity;
 	}
 
-	public void setCapcity(int capcity) {
-		this.capcity = capcity;
+	public void setCapacity(int capacity) {
+		this.capacity = capacity;
 	}
 
 	public String getMultimedia() {
@@ -88,7 +88,7 @@ public class Room {
 	public void setMultimedia(String multimedia) {
 		this.multimedia = multimedia;
 	}
-	
+
 	public String getName4Training() {
 		return name4Training;
 	}
