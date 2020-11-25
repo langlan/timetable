@@ -6,23 +6,29 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 
 @Table(uniqueConstraints = {
-		@UniqueConstraint(columnNames = { "class_course_id", "weekno", "dayOfWeek", "timeStart", "timeEnd" }) })
+		// @UniqueConstraint(columnNames = { "the_class_id", "course_id", "termYear", "termMonth", "weekno", "dayOfWeek", "timeStart", "timeEnd" }) 
+		})
 @Entity
 public class Schedule {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 	@ManyToOne
-	private ClassCourse classCourse;
+	private Class theClass;
+	@ManyToOne
+	private Course course;
+	@ManyToOne
+	private Teacher teacher;
+	@ManyToOne
+	private Site site; // 上课地点
 	// 时间
+	private short termYear;
+	private byte termMonth;
 	private byte weekno, dayOfWeek;
 	private String date;
-	private byte timeStart, timeEnd; // 起时课时
-	// 地点
-	private String room; // name&id
+	private byte timeStart, timeEnd; // 起止课时
 
 	public long getId() {
 		return id;
@@ -32,12 +38,44 @@ public class Schedule {
 		this.id = id;
 	}
 
-	public ClassCourse getClassCourse() {
-		return classCourse;
+	public Class getTheClass() {
+		return theClass;
 	}
 
-	public void setClassCourse(ClassCourse classCourse) {
-		this.classCourse = classCourse;
+	public void setTheClass(Class theClass) {
+		this.theClass = theClass;
+	}
+
+	public Course getCourse() {
+		return course;
+	}
+
+	public void setCourse(Course course) {
+		this.course = course;
+	}
+
+	public Teacher getTeacher() {
+		return teacher;
+	}
+
+	public void setTeacher(Teacher teacher) {
+		this.teacher = teacher;
+	}
+
+	public short getTermYear() {
+		return termYear;
+	}
+
+	public void setTermYear(short termYear) {
+		this.termYear = termYear;
+	}
+
+	public byte getTermMonth() {
+		return termMonth;
+	}
+
+	public void setTermMonth(byte termMonth) {
+		this.termMonth = termMonth;
 	}
 
 	public byte getWeekno() {
@@ -80,12 +118,11 @@ public class Schedule {
 		this.timeEnd = timeEnd;
 	}
 
-	public String getRoom() {
-		return room;
+	public Site getSite() {
+		return site;
 	}
 
-	public void setRoom(String room) {
-		this.room = room;
+	public void setSite(Site site) {
+		this.site = site;
 	}
-
 }

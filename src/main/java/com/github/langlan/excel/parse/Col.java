@@ -56,6 +56,7 @@ public class Col<CONTEXT, V> {
 
 	}
 
+	/** find the first matched cell, return its index (0 based). */
 	int indexOfFirst(Row headerRow) {
 		for (int i = 0; i < headerRow.getLastCellNum(); i++) {
 			Cell cell = headerRow.getCell(i);
@@ -67,7 +68,7 @@ public class Col<CONTEXT, V> {
 			}
 		}
 		if (!this.optional) {
-			throw new IllegalStateException("找不到匹配的列：" + headerPattern);
+			throw new IllegalStateException("Could not find the column：" + headerPattern);
 		}
 		return -1;
 	}

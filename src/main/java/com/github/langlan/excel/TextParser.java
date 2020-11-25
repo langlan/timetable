@@ -128,7 +128,7 @@ public interface TextParser {
 	public class ScheduledCourse {
 		String course;
 		TimeRange timeRange;
-		String room;
+		String site;
 		String teacher;
 	}
 
@@ -152,7 +152,7 @@ public interface TextParser {
 	/**
 	 * When multiple, split by line break.
 	 * 
-	 * @param text (courseName<>timeRange<>roomName<>teacherName)+
+	 * @param text (courseName<>timeRange<>siteName<>teacherName)+
 	 * @return an array of schedule-info
 	 */
 	public static ScheduledCourse[] parseSchedule(String text) {
@@ -167,7 +167,7 @@ public interface TextParser {
 			ScheduledCourse schedule = new ScheduledCourse();
 			schedule.course = values[0];
 			schedule.timeRange = parseTimeRange(values[1]);
-			schedule.room = values[2];
+			schedule.site = values[2];
 			schedule.teacher = values[3];
 			ret[i] = schedule;
 		}

@@ -25,26 +25,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.github.langlan.dao.DeptRepository;
-import com.github.langlan.dao.RoomRepository;
+import com.github.langlan.dao.SiteRepository;
 import com.github.langlan.domain.Dept;
-import com.github.langlan.domain.Room;
+import com.github.langlan.domain.Site;
 import com.github.langlan.excel.parse.Columns;
 
 @Service
-public class RoomImporter {
-	private static final Log log = LogFactory.getLog(RoomImporter.class);
-	private @Autowired RoomRepository roomRepository;
+public class SiteImporter {
+	private static final Log log = LogFactory.getLog(SiteImporter.class);
+	private @Autowired SiteRepository siteRepository;
 	private @Autowired DeptRepository deptRepository;
-	private Columns<Room> cols = new Columns<>(); // template.
+	private Columns<Site> cols = new Columns<>(); // template.
 
-	public RoomImporter() {
-		cols.scol("教室编号", (it, room) -> room.setCode(TextParser.firstIntStr(it))); // some are number-type
-		cols.scol("教室名称", (it, room) -> room.setName(it));
-		cols.scol("座位数", (it, room) -> room.setCapcity(TextParser.parseInt(it))); // some are number-type
-		cols.scol("教室类别", (it, room) -> room.setType(it));
-		cols.scol("最终调换", (it, room) -> room.setDept(new Dept(it)));
-		cols.scol("多媒体改造", (it, room) -> room.setMultimedia(it));
-		cols.scolOptional("校内实训基地名称", (it, room) -> room.setName4Training(it));
+	public SiteImporter() {
+		cols.scol("教室编号", (it, m) -> m.setCode(TextParser.firstIntStr(it))); // some are number-type
+		cols.scol("教室名称", (it, m) -> m.setName(it));
+		cols.scol("座位数", (it, m) -> m.setCapacity(TextParser.parseInt(it))); // some are number-type
+		cols.scol("教室类别", (it, m) -> m.setRoomType(it));
+		cols.scol("最终调换", (it, m) -> m.setDept(new Dept(it)));
+		cols.scol("多媒体改造", (it, m) -> m.setMultimedia(it));
+		cols.scolOptional("校内实训基地名称", (it, m) -> m.setName4Training(it));
 	}
 
 	@Transactional
@@ -66,17 +66,15 @@ public class RoomImporter {
 	protected void doImport(Sheet sheet) {
 		int headerRowIndex = 1, dataFirstRowIndex = 2;
 		Row headerRow = sheet.getRow(headerRowIndex);
-		BiConsumer<Row, Room> rowParser = cols.buildByHeaderRow(headerRow);
+		BiConsumer<Row, Site> rowParser = cols.buildByHeaderRow(headerRow);
 		if (rowParser == null) {
 			log.warn("Ignore sheet :" + sheet.getSheetName());
 			return;
 		}
 
 		// load keys for check;
-		// List<String> _keys = roomRepository.findAllLogicKeys();
-		// Set<String> roomKeys = new HashSet<>(_keys);
-		List<String[]> _keys = roomRepository.findAllLogicKeys(); // name + type
-		Set<String> roomKeys = _keys.parallelStream().map(it -> join("", it)).collect(toSet());
+		List<String[]> _keys = siteRepository.findAllLogicKeys(); // name + type
+		Set<String> siteKeys = _keys.parallelStream().map(it -> join("", it)).collect(toSet());
 		Map<String, Dept> depts = stream(deptRepository.findAll().spliterator(), false)
 				.collect(toMap(it -> it.getName(), it -> it));
 
@@ -87,32 +85,32 @@ public class RoomImporter {
 		// each dataRow
 		for (int i = dataFirstRowIndex; i <= sheet.getLastRowNum(); i++) {
 			Row row = sheet.getRow(i);
-			Room room = new Room();
-			rowParser.accept(row, room);
-			String deptName = room.getDept().getName();
-			room.setDept(null);
+			Site site = new Site();
+			rowParser.accept(row, site);
+			String deptName = site.getDept().getName();
+			site.setDept(null);
 
 			if (!deptName.isEmpty()) { // re-set the department: find by name + type.
-				room.setDept(depts.get(deptName));
-				if (room.getDept() == null) {
-					room.setDept(deptRepository.save(new Dept(deptName)));
-					depts.put(deptName, room.getDept());
-					deptRepository.save(room.getDept());
+				site.setDept(depts.get(deptName));
+				if (site.getDept() == null) {
+					site.setDept(deptRepository.save(new Dept(deptName)));
+					depts.put(deptName, site.getDept());
+					deptRepository.save(site.getDept());
 				}
 			}
 
-			if (!room.getName().isEmpty() && !room.getType().isEmpty()) { // not from empty row.
+			if (!site.getName().isEmpty() && !site.getRoomType().isEmpty()) { // not from empty row.
 				total++;
-				String key = room.getName() + room.getType();
-				if (roomKeys.add(key)) { // check existence.
+				String key = site.getName() + site.getRoomType();
+				if (siteKeys.add(key)) { // check existence.
 					imported++;
-					log.info("imported new room: " + key);
-					roomRepository.save(room);
+					log.info("imported new site: " + key);
+					siteRepository.save(site);
 				} else {
-					log.info("Ignore exist room: " + key);
+					log.info("Ignore exist site: " + key);
 				}
 				if (i == dataFirstRowIndex) { // first row;
-					mainDept = room.getDept();
+					mainDept = site.getDept();
 				} else if (mainDept == null || !mainDept.getName().equals(deptName)) {
 					mainDeptAllMatch = false;
 				}

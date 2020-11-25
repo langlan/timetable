@@ -1,7 +1,6 @@
 package com.github.langlan.excel;
 
 import static com.github.langlan.excel.TextParser.cellString;
-import static com.github.langlan.excel.TextParser.handleMalFormedDegree;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,9 +25,13 @@ import org.springframework.stereotype.Service;
 
 import com.github.langlan.dao.ClassCourseRepository;
 import com.github.langlan.dao.ScheduleRepository;
+import com.github.langlan.dao.SiteRepository;
+import com.github.langlan.dao.TeacherRepository;
 import com.github.langlan.domain.Class;
 import com.github.langlan.domain.ClassCourse;
 import com.github.langlan.domain.Schedule;
+import com.github.langlan.domain.Site;
+import com.github.langlan.domain.Teacher;
 import com.github.langlan.domain.Term;
 import com.github.langlan.excel.TextParser.ScheduledCourse;
 import com.github.langlan.excel.TextParser.TimeRange;
@@ -37,19 +40,22 @@ import com.github.langlan.excel.TextParser.TimeRange;
 public class ScheduleImporter {
 	private static final Log log = LogFactory.getLog(ScheduleImporter.class);
 	private @Autowired ClassCourseRepository classCourseRepository;
+	// private @Autowired ClassRepository classRepository;
+	private @Autowired TeacherRepository teacherRepository;
+	private @Autowired SiteRepository siteRepository;
 	private @Autowired ScheduleRepository scheduleRespository;
 
 	@Transactional
-	public void importFile(Term term, File file) throws EncryptedDocumentException, IOException {
+	public void importFile(Term term, int classYear, File file) throws EncryptedDocumentException, IOException {
 		try (Workbook wb = WorkbookFactory.create(file, null, true)) {
-			doImport(term, wb);
+			doImport(term, classYear, wb);
 		}
 	}
 
-	protected void doImport(Term term, Workbook wb) {
+	protected void doImport(Term term, int classYear, Workbook wb) {
 		for (int i = 0; i < wb.getNumberOfSheets(); i++) {
 			Sheet sheet = wb.getSheetAt(i);
-			doImport(term, sheet);
+			doImport(term, classYear, sheet);
 		}
 	}
 
@@ -57,18 +63,19 @@ public class ScheduleImporter {
 		byte dayOfWeek, timeStart, timeEnd;
 	}
 
-	protected void doImport(Term term, Sheet sheet) {
+	protected void doImport(Term term, int classYear, Sheet sheet) {
 		int headerRowIndex = 1, dataFirstRowIndex = 2;
 		Pattern timePattern = Pattern.compile("([一二三四五六])/(\\d+)-(\\d+)");
 		String weekWords = "一二三四五六";
 
 		Row headerRow = sheet.getRow(headerRowIndex);
-		int classColIndex = -1;
 		if (headerRow == null) {
 			log.warn("ignore sheet【" + sheet.getSheetName() + "】");
 			return;
 		}
 
+		// handle title-row
+		int classColIndex = -1;
 		TimeInfo[] timeInfos = new TimeInfo[headerRow.getLastCellNum()];
 		for (int i = 0; i < headerRow.getLastCellNum(); i++) {
 			Cell cell = headerRow.getCell(i);
@@ -78,7 +85,7 @@ public class ScheduleImporter {
 				classColIndex = i;
 			} else if (header.indexOf("/") > 0) {
 				Matcher m = timePattern.matcher(header);
-				if (!m.find()) // TODO: use MessageSource.
+				if (!m.find()) // TODO: use MessageSource?
 					throw new IllegalStateException("未识别的表头【" + header + "】，@Sheet【" + sheet.getSheetName() + "】, 行：【"
 							+ headerRow.getRowNum() + 1 + "】");
 				timeInfos[i] = new TimeInfo();
@@ -94,67 +101,87 @@ public class ScheduleImporter {
 		if (all.size() != indexed.size())
 			throw new IllegalStateException("发现现存【班级选课表】中存在重复数据！");
 
+		String classYearFilter = Integer.toString(classYear % 2000);
 		int imported = 0, total = 0;
 		for (int rowIndex = dataFirstRowIndex; rowIndex < sheet.getLastRowNum(); rowIndex++) {
 			Row row = sheet.getRow(rowIndex);
+			Cell cell = row.getCell(classColIndex);
 			total++;
 			// parse class
-			String classNameWithDegree = handleMalFormedDegree(cellString(row.getCell(classColIndex)));
+			String classNameWithDegree = TextParser.handleMalFormedDegree(cellString(cell));
 			if (classNameWithDegree.isEmpty())
 				continue;
+			if (!classNameWithDegree.contains(classYearFilter)) {
+				log.debug("忽略班级：" + classNameWithDegree);
+				continue;
+			}
 
 			Class pc = TextParser.parseClass(classNameWithDegree);
-			// 因每行为一个班级课表，故幂等/防重导策略：
+			// Class theClass = classRepository.findByNameAndDegree(pc.getName(), pc.getDegree());
+			// 因每行为一个班级课表，故幂等/防重导策略以班级为单位：
 			// 1. 当发现有该班级的课程安排时，忽略。【暂时采用】
 			// 2. 删除已有班级的课程安排数据，而后正常导入
 			// 2.1 优点：支持/适合【修改导入文件后重新导入的情景】
 			// 2.2 缺点：在数据未曾修改时，浪费 id
 			// 3. 全部清空，全量导入
 			// 3.1 优点：适合【测试场景】、【全量重导需求（排课功能脱离或表表隔离）】
-			if (scheduleRespository.countByClassAndTerm(pc.getName(), pc.getDegree(), term.getTermYear(), term.getTermMonth()) > 0) {
+			if (scheduleRespository.countByClassAndTerm(pc.getName(), pc.getDegree(), term.getTermYear(),
+					term.getTermMonth()) > 0) {
 				log.info("发现已存在班级的排课信息，忽略该班级 @【" + classNameWithDegree + "】");
 				continue;
 			}
-			
-			// TODO: TEPM ignore non-mapped class-course for class-18 补充数据?
-			if (classNameWithDegree.contains("18"))
-				continue;
-			
-			imported ++;
+
+			imported++;
 			for (int colIndex = 0; colIndex < timeInfos.length; colIndex++) {
 				TimeInfo timeInfo = timeInfos[colIndex]; // column Index.
 				String scheduleText;
 				ScheduledCourse[] scs;
 				// Empty column
-				if (timeInfo == null || (scheduleText = cellString(row.getCell(colIndex))).isEmpty())
+				Cell scheduledCell = row.getCell(colIndex);
+				if (timeInfo == null || (scheduleText = cellString(scheduledCell)).isEmpty())
 					continue;
 
 				// parse schedule
 				try {
 					scs = TextParser.parseSchedule(scheduleText);
 				} catch (Exception e) {
-					throw new IllegalStateException("课表数据格式有误【" + scheduleText + "】，@sheet: " + sheet.getSheetName()
-							+ ", 行：【" + headerRow.getRowNum() + 1 + "】", e);
+					throw new IllegalStateException(
+							"课表数据格式有误【" + scheduleText + "】，@sheet: " + sheet.getSheetName() + cell.getAddress(), e);
 				}
 
 				// deal with parsed schedule
 				for (ScheduledCourse sc : scs) {
+					TimeRange times = sc.timeRange;
+					byte weeknoStart = times.weeknoStart, weeknoEnd = times.weeknoEnd;
+					byte timeStart = times.timeStart, timeEnd = times.timeEnd;
 					String classCourseKey = classNameWithDegree + "-" + sc.course;
 					ClassCourse classCourse = indexed.get(classCourseKey);
+					Teacher teacher = null;
+					Site site = null;
 
 					if (classCourse == null) {
 						throw new IllegalStateException("无法找到【班级选课】记录：" + classCourseKey);
 					}
 
-					// validate teacher-name.
-					if (!classCourse.getTeacher().getName().equals(sc.teacher)) { // validate
-						log.warn("正导入的课程教师名与现存数据不匹配：" + "在导【" + sc.teacher + "】 VS 已有【"
-								+ classCourse.getTeacher().getName() + "】" + classCourseKey);
+					// validate/locate-by teacher-name.
+					if (classCourse.getTeacher().getName().equals(sc.teacher)) { // validate
+						teacher = classCourse.getTeacher();
+					} else {
+						if (!classCourse.getTeacherNames().contains(sc.teacher)) {
+							log.warn("正导入的课程教师名与现存数据不匹配：" + "在导【" + sc.teacher + "】 VS 已有【"
+									+ classCourse.getTeacherNames() + "】" + classCourseKey);
+						}
+						teacher = teacherRepository.findByName(sc.teacher).orElseGet(() -> {
+							throw new IllegalStateException("找不到教师【" + sc.teacher + "】");
+						});
 					}
 
-					TimeRange times = sc.timeRange;
-					byte weeknoStart = times.weeknoStart, weeknoEnd = times.weeknoEnd;
-					byte timeStart = times.timeStart, timeEnd = times.timeEnd;
+					// locate site
+					// TODO. name is not actually a key. but for theory class, it maybe...
+					site = siteRepository.findUniqueByName(sc.site).orElseGet(() -> {
+						throw new IllegalStateException("找不到上课地点【" + sc.site + "】+ 【" + scheduleText + "】@sheet:"
+								+ sheet.getSheetName() + ": " + cell.getAddress());
+					});
 
 					// try create schedule records and save.
 					for (byte weekno = weeknoStart; weekno <= weeknoEnd; weekno++) {
@@ -163,7 +190,12 @@ public class ScheduleImporter {
 							continue; // exclude even when odd-only, or exclude odd when even-only
 						}
 						Schedule schedule = new Schedule();
-						schedule.setClassCourse(classCourse);
+						schedule.setTermYear(term.getTermYear());
+						schedule.setTermMonth(term.getTermMonth());
+						schedule.setTheClass(classCourse.getTheClass());
+						schedule.setCourse(classCourse.getCourse());
+						// schedule.setClassCourse(classCourse);
+						schedule.setTeacher(teacher);
 						schedule.setWeekno(weekno);
 						schedule.setDayOfWeek(timeInfo.dayOfWeek);
 						if (timeStart != timeInfo.timeStart || timeEnd != timeInfo.timeEnd) {
@@ -174,10 +206,9 @@ public class ScheduleImporter {
 						// schedule.setDate(date);
 						schedule.setTimeStart(timeStart);
 						schedule.setTimeEnd(timeEnd);
-						schedule.setRoom(sc.room);
+						schedule.setSite(site);
 						scheduleRespository.save(schedule);
 						// TODO: set date based on term:weekno+dayOfweek; initialize week & date table if necessary.
-						// TODO: mapping room? check for non-unique named room in schedule.
 					}
 				}
 

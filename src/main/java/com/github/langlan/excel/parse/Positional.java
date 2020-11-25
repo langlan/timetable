@@ -10,9 +10,9 @@ public interface Positional {
 	/** 0 based */
 	int getPosition();
 
-	/** set a fixed-number (0 based) for the expecting row. */
-	public static Positional fixed(int postion) {
-		return () -> postion;
+	/** return a Positional witch use a fixed-number (0 based) as position */
+	public static Positional fixed(int position) {
+		return () -> position;
 	}
 
 	/** return a function witch get a cell from row by the {@link #getPosition()} */

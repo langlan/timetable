@@ -9,15 +9,15 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "name", "type" }))
-public class Room {
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "name", "roomType" }))
+public class Site {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
 	private String code; // legacy
 	private String name;
 	private String shortName;
-	private String type; // 标准教室|专业机房|...
+	private String roomType; // 标准教室|专业机房|...
 	private int capacity;
 	@ManyToOne
 	private Dept dept; // 最终指派
@@ -65,12 +65,12 @@ public class Room {
 		this.shortName = shortName;
 	}
 
-	public String getType() {
-		return type;
+	public String getRoomType() {
+		return roomType;
 	}
 
-	public void setType(String type) {
-		this.type = type;
+	public void setRoomType(String type) {
+		this.roomType = type;
 	}
 
 	public int getCapacity() {

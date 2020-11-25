@@ -18,7 +18,8 @@ public class ClassCourse {
 	@ManyToOne
 	private Course course;
 	@ManyToOne
-	private Teacher teacher;
+	private Teacher teacher; // 单教师，或多教师第一个
+	private String teacherNames; // 原 excel 教师名，多教师以 '/'分隔
 
 	public long getId() {
 		return id;
@@ -66,6 +67,14 @@ public class ClassCourse {
 
 	public void setTeacher(Teacher teacher) {
 		this.teacher = teacher;
+	}
+
+	public String getTeacherNames() {
+		return teacherNames;
+	}
+
+	public void setTeacherNames(String teacherNames) {
+		this.teacherNames = teacherNames;
 	}
 
 }

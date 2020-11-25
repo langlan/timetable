@@ -42,7 +42,7 @@ public class TermService {
 		termRepository.findById(term.getId()).orElseGet(() -> termRepository.save(term));
 
 		CalenderWrapper cw = Dates.wrapper().letMondayFirst().with(new SimpleDateFormat("yyyyMMdd"));
-		cw.go(firstWeek).getTime();
+		cw.go(firstWeek);
 		
 		// TODO: delete existing weeks and dates
 		// or rest 
@@ -73,6 +73,11 @@ public class TermService {
 
 			// cw.addWeek(1); already go forward in day-loop
 		}
+	}
+	
+	@Transactional
+	public void rebuildScheduleDate(Term term) {
+		
 	}
 
 	@Transactional

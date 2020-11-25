@@ -9,13 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.github.langlan.excel.ClassCourseImporter;
-import com.github.langlan.excel.RoomImporter;
+import com.github.langlan.excel.SiteImporter;
 import com.github.langlan.excel.ScheduleImporter;
 
 @SpringBootTest
 public class ImportExcelTest {
 	private @Autowired ClassCourseImporter classCourseImporter;
-	private @Autowired RoomImporter roomImporter;
+	private @Autowired SiteImporter roomImporter;
 	private @Autowired ScheduleImporter scheduleImporter;
 	// private @Autowired DeptRepository deptRepository;
 	// private @Autowired MajorRepository majorRepository;
@@ -35,9 +35,9 @@ public class ImportExcelTest {
 	@Test
 	public void testImportScheduleOfTheoryCourse() throws EncryptedDocumentException, IOException {
 		File file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-1.xlsx");
-		scheduleImporter.importFile(TermSerivcelTest.TERM, file);
+		scheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
 		file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-2.xlsx");
-		scheduleImporter.importFile(TermSerivcelTest.TERM, file);
+		scheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
 	}
 
 }

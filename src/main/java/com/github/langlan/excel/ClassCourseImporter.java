@@ -90,6 +90,7 @@ public class ClassCourseImporter {
 		});
 		int count = 0;
 
+		Set<String> otherTeacherNames = new HashSet<>();
 		for (int i = 1; i < sheet.getLastRowNum(); i++) {
 			Row row = sheet.getRow(i);
 			String deptName = row.getCell(18).toString();
@@ -103,12 +104,12 @@ public class ClassCourseImporter {
 			String courseLabByTheory = row.getCell(13).toString();
 			String courseLocationType = row.getCell(15).toString();
 			String teacherCode = row.getCell(4).toString();
-			String teacherName = row.getCell(5).toString();
+			String _teacherNames = row.getCell(5).toString();
 
 			String classCourseKey = classNameWithDegree + "-" + courseCode;
 			String deptKey = deptName;
 			String majorKey = majorNameWithDegree = handleMalFormedDegree(majorNameWithDegree);
-			String classKey = classNameWithDegree = handleMalFormedDegree(classNameWithDegree); 
+			String classKey = classNameWithDegree = handleMalFormedDegree(classNameWithDegree);
 			// seems like no malformed with className happens, but still...
 
 			if (classCourseKeys.contains(classCourseKey)) {
@@ -170,13 +171,15 @@ public class ClassCourseImporter {
 			});
 
 			// find or create teacher
-			Teacher teacher = teacherRepository.findById(teacherCode).orElseGet(() -> {
-				Teacher _teacher = new Teacher();
-				_teacher.setCode(teacherCode);
-				_teacher.setName(teacherName);
-				teacherRepository.save(_teacher);
-				return _teacher;
-			});
+			String[] teacherNames = _teacherNames.split("/");
+			Teacher teacher = getOrCreateTeacher(teacherCode, teacherNames[0]);
+			if (!teacherCode.equals(teacher.getCode())) {
+				teacher.setCode(teacherCode);
+				teacherRepository.save(teacher);
+			}
+			for (int ti = 1; ti < teacherNames.length; ti++) {
+				otherTeacherNames.add(teacherNames[ti]);
+			}
 
 			classCourseRepository.flush();
 			// create class-course.
@@ -184,12 +187,24 @@ public class ClassCourseImporter {
 			classCourse.setCourse(course);
 			classCourse.setTheClass(theClass);
 			classCourse.setTeacher(teacher);
+			classCourse.setTeacherNames(_teacherNames);
 			classCourse.setTermYear(term.getTermYear());
 			classCourse.setTermMonth(term.getTermMonth());
 			classCourseRepository.save(classCourse);
 			count++;
 		}
+		otherTeacherNames.forEach(it -> getOrCreateTeacher("T" + it, it)); // use "T" + name as temp-code.
 		log.info("导入班级选课记录共【" + count + "/" + sheet.getLastRowNum() + "】");
+	}
+
+	private Teacher getOrCreateTeacher(String teacherCode, String name) {
+		return teacherRepository.findByName(name).orElseGet(() -> {
+			Teacher _teacher = new Teacher();
+			_teacher.setCode(teacherCode);
+			_teacher.setName(name);
+			teacherRepository.save(_teacher);
+			return _teacher;
+		});
 	}
 
 }
