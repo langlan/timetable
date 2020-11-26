@@ -39,7 +39,7 @@ import com.jytec.cs.excel.TextParser.TimeRange;
 
 @Service
 public class ScheduleImporter {
-	public static final String TRAININGTYPE_NON = "not-training";
+	public static final String TRAININGTYPE_NON = "N";
 	private static final Log log = LogFactory.getLog(ScheduleImporter.class);
 	private @Autowired ClassCourseRepository classCourseRepository;
 	// private @Autowired ClassRepository classRepository;

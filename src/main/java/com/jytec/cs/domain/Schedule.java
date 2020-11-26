@@ -31,7 +31,7 @@ public class Schedule {
 	private String date;
 	private byte timeStart, timeEnd; // 起止课时
 	// Other
-	private String trainingType; // 非实训|校内实训|企业实训
+	private String trainingType; // N/S/E for 非实训|校内实训|企业实训
 
 	public long getId() {
 		return id;
