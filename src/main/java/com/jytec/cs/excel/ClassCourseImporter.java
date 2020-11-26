@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import javax.transaction.Transactional;
@@ -90,6 +91,7 @@ public class ClassCourseImporter {
 		});
 		int count = 0;
 
+		Random random = new Random();
 		Set<String> otherTeacherNames = new HashSet<>();
 		for (int i = 1; i < sheet.getLastRowNum(); i++) {
 			Row row = sheet.getRow(i);
@@ -152,6 +154,7 @@ public class ClassCourseImporter {
 
 			if (theClass == null) {
 				theClass = _class;
+				theClass.setSize(30 + random.nextInt(20));
 				classes.put(classKey, theClass);
 				classRepository.save(theClass);
 			}
