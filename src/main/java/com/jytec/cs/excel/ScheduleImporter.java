@@ -39,7 +39,7 @@ import com.jytec.cs.excel.TextParser.TimeRange;
 
 @Service
 public class ScheduleImporter {
-	public static final String TRAININGTYPE_NON = "非实训";
+	public static final String TRAININGTYPE_NON = "not-training";
 	private static final Log log = LogFactory.getLog(ScheduleImporter.class);
 	private @Autowired ClassCourseRepository classCourseRepository;
 	// private @Autowired ClassRepository classRepository;
@@ -210,6 +210,7 @@ public class ScheduleImporter {
 							continue; // exclude even when odd-only, or exclude odd when even-only
 						}
 						Schedule schedule = new Schedule();
+						schedule.setTrainingType(TRAININGTYPE_NON);
 						schedule.setTermYear(term.getTermYear());
 						schedule.setTermMonth(term.getTermMonth());
 						schedule.setTheClass(classCourse.getTheClass());
