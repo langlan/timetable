@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.persistence.NonUniqueResultException;
 import javax.transaction.Transactional;
 
 import org.apache.commons.logging.Log;
@@ -22,6 +23,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.stereotype.Service;
 
 import com.jytec.cs.dao.ClassCourseRepository;
@@ -186,16 +188,20 @@ public class ScheduleImporter {
 					}
 
 					// locate site
-					// TODO. name is not actually a unique key. but for theory course, it maybe...
-					site = siteRepository.findUniqueByName(sc.site).orElseGet(() -> {
-						String msg = "找不到上课地点【" + sc.site + "】【" + scheduleText + "】" + atLocaton(scheduledCell);
-						log.warn(msg);
-						// throw new IllegalStateException(warn);
-						Site _site = new Site();
-						_site.setName(sc.site);
-						_site.setCode("T" + sc.site); // marker: auto-create.
-						return siteRepository.save(_site);
-					});
+					// NODE: name is not actually a unique key. but for theory course, we suppose so.
+					try {
+						site = siteRepository.findUniqueByName(sc.site).orElseGet(() -> {
+							String msg = "找不到上课地点【" + sc.site + "】【" + scheduleText + "】" + atLocaton(scheduledCell);
+							log.warn(msg);
+							// throw new IllegalStateException(warn);
+							Site _site = new Site();
+							_site.setName(sc.site);
+							_site.setCode("T" + sc.site); // marker: auto-create.
+							return siteRepository.save(_site);
+						});
+					} catch (IncorrectResultSizeDataAccessException | NonUniqueResultException e) {
+						throw new IllegalStateException("非唯一：存在多个同名上课地点【" + sc.site + "】" + atLocaton(scheduledCell));
+					}
 
 					if (timeStart != timeInfo.timeStart || timeEnd != timeInfo.timeEnd) {
 						throw new IllegalStateException("课程时间与表头时间不匹配：表头【" + timeStart + "," + timeEnd + "】，当前【"
@@ -231,7 +237,7 @@ public class ScheduleImporter {
 			}
 		}
 		log.info("成功导入【" + imported + "/" + totalRow + "】行，@【" + sheet.getSheetName() + "】");
-		// Should it be called through other UI to keep data-import and date-build independent. 
+		// Should it be called through other UI to keep data-import and date-build independent.
 		scheduleRespository.updateDateByTerm(term.getTermYear(), term.getTermMonth());
 	}
 }

@@ -1,13 +1,11 @@
 package com.jytec.cs.excel;
 
-import static java.lang.String.join;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -73,8 +71,15 @@ public class SiteImporter {
 		}
 
 		// load keys for check;
-		List<String[]> _keys = siteRepository.findAllLogicKeys(); // name + type
-		Set<String> siteKeys = _keys.parallelStream().map(it -> join("", it)).collect(toSet());
+		Iterable<Site> allSites = siteRepository.findAll();
+		// List<String[]> _keys = siteRepository.findAllLogicKeys(); // name + type
+		// Set<String> siteKeys = _keys.parallelStream().map(it -> join("", it)).collect(toSet());
+		Set<String> siteKeys = stream(allSites.spliterator(), false).map(it -> it.getName() + it.getRoomType())
+				.collect(toSet());
+		Map<String, Site> indexedAutoSites = stream(allSites.spliterator(), false)
+				.filter(it -> it.getCode() != null && it.getCode().startsWith("T"))
+				.collect(toMap(Site::getName, it -> it));
+
 		Map<String, Dept> depts = stream(deptRepository.findAll().spliterator(), false)
 				.collect(toMap(it -> it.getName(), it -> it));
 
@@ -105,6 +110,18 @@ public class SiteImporter {
 				if (siteKeys.add(key)) { // check existence.
 					imported++;
 					log.info("imported new site: " + key);
+					Site exist = indexedAutoSites.get(site.getName());
+					if (exist != null) {
+						exist.setDept(site.getDept());
+						exist.setCode(site.getCode());
+						exist.setName4Training(site.getName4Training());
+						exist.setRoomType(site.getRoomType());
+						exist.setCapacity(site.getCapacity());
+						exist.setMultimedia(site.getMultimedia());
+						exist.setShortName(site.getShortName());
+						exist.setMemo(site.getMemo());
+						site = exist;
+					}
 					siteRepository.save(site);
 				} else {
 					log.info("Ignore exist site: " + key);
@@ -116,7 +133,7 @@ public class SiteImporter {
 				}
 			}
 		}
-		//TODO: handle merging areas.
+		// TODO: handle merging areas.
 		log.info("Sheet[" + sheet.getSheetName() + "] 导入数据【" + imported + "/" + total + "】条");
 		if (mainDept != null && mainDeptAllMatch && total > 10 && mainDept.getShortName() == null) {
 			mainDept.setShortName(sheet.getSheetName());
