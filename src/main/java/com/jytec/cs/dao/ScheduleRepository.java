@@ -17,6 +17,11 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType='"+ ScheduleImporter.TRAININGTYPE_NON +"'")
 	int countNonTrainingByClassAndTerm(String className, String classDegree, short termYear, byte termMonth);
 
+	@Query("Select count(*) From Schedule s Where " //
+			+ "s.termYear=?3 And s.termMonth=?4 And " //
+			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType<>'"+ ScheduleImporter.TRAININGTYPE_NON +"'")
+	int countTrainingByClassAndTerm(String name, String degree, short termYear, byte termMonth);
+	
 	/**
 	 * use when rebuild/init term data, or after import schedule data.
 	 * 
@@ -28,4 +33,6 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 			+ "  Where w.termYear=s.termYear And w.termMonth=s.termMonth And w.weekno=s.weekno And d.dayOfWeek=s.dayOfWeek) "
 			+ "Where s.termYear=?1 And s.termMonth=?2")
 	int updateDateByTerm(short termYear, byte termMonth);
+
+	
 }

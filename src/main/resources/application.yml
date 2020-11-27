@@ -13,10 +13,15 @@ spring:
       generate-ddl: true
       hibernate:
          ddl-auto: update
-      show-sql: true
+      # show-sql: true
       # open-in-view=true
 
 
-#logging:
-#   level:
+logging:
+   level:
+      com:
+         jytec:
+            cs:
+               excel: DEBUG
+
     

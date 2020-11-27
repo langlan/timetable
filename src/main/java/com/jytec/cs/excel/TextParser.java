@@ -1,5 +1,7 @@
 package com.jytec.cs.excel;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -8,10 +10,11 @@ import org.apache.poi.ss.usermodel.Row;
 
 import com.jytec.cs.domain.Class;
 import com.jytec.cs.domain.Major;
+import com.jytec.cs.excel.TrainingScheduleImporter.TitleInfo.TimeInfo;
 
 public interface TextParser {
 	// MajorYY-No[Degree] //
-	final Pattern CLASS_NAME_WITH_DEGREE = Pattern.compile("(.+?)(\\d+)-(\\d+)\\[+(.+)\\]");
+	final Pattern CLASS_NAME_WITH_DEGREE = Pattern.compile("(.+?)(\\d+)-(\\d+)\\[+(.+?)\\]");
 	final Pattern MAJOR = Pattern.compile("(.+?)\\[+(.+)\\]");
 	final Pattern MALFORMED_DEGREE = Pattern.compile("\\[{2,}|\\]{2,}");
 	// NOTE: we use '[+' instead of '[' for stripping out the malformed text.
@@ -59,6 +62,48 @@ public interface TextParser {
 		clazz.setYear(Short.parseShort(year));
 		clazz.setClassNo(Byte.parseByte(classNo));
 		return clazz;
+	}
+
+	final Pattern CLASSES_NAME = Pattern.compile("(?<major>.+?)(?<year>\\d+)-" //
+			+ "(?<classno>\\d+)" // classNo-start or just classNo
+			+ "(?:[~-](?<classnoTo>\\d+))?" // classNo-end
+			+ "(?:[\\[\\(（]+(?<degree>.+?)[\\]\\)）])?"); // degree: optional
+
+	/**
+	 * <ul>
+	 * <li>standard+</li>
+	 * <li>majorYear-no~no :: (with no degree or （三二）)</li>
+	 * <li>majorYear级no－no（系部）::</li>
+	 * </ul>
+	 */
+	public static Class[] parseClasses(String classesRangeText, String defaultDegree) {
+		List<Class> ret = new ArrayList<>();
+		Matcher m = CLASSES_NAME.matcher(classesRangeText);
+		while (m.find()) {
+			String majorShortName = m.group("major");
+			String year = "20" + m.group("year");
+			int classNoStart = Integer.parseInt(m.group("classno"));
+			String classNoToStr = m.group("classnoTo");
+			int classNoEnd = classNoToStr != null ? Integer.parseInt(classNoToStr) : classNoStart;
+			String degree = m.group("degree");
+			if (degree == null) {
+				degree = defaultDegree;
+			}
+
+			for (int classNo = classNoStart; classNo <= classNoEnd; classNo++) {
+				Class clazz = new Class();
+				Major major = new Major();
+				clazz.setMajor(major);
+				major.setShortName(majorShortName);
+				major.setDegree(degree);
+				clazz.setName(majorShortName + year.substring(2) + "-" + classNo);
+				clazz.setDegree(degree);
+				clazz.setYear(Short.parseShort(year));
+				clazz.setClassNo((byte) classNo);
+				ret.add(clazz);
+			}
+		}
+		return ret.toArray(new Class[ret.size()]);
 	}
 
 	/**
@@ -127,10 +172,10 @@ public interface TextParser {
 	}
 
 	public class ScheduledCourse {
-		String course;
-		TimeRange timeRange;
-		String site;
-		String teacher;
+		public String course;
+		public TimeRange timeRange;
+		public String site;
+		public String teacher;
 	}
 
 	public static TimeRange parseTimeRange(String timeRange) {
@@ -157,8 +202,7 @@ public interface TextParser {
 	 * @return an array of schedule-info
 	 */
 	public static ScheduledCourse[] parseSchedule(String text) {
-		String lineBreakPattern = "(\\s*)?[\r\n]+(\\s*)?";
-		String[] lines = text.split(lineBreakPattern);
+		String[] lines = breakLines(text);
 		ScheduledCourse[] ret = new ScheduledCourse[lines.length];
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
@@ -175,6 +219,52 @@ public interface TextParser {
 		return ret;
 	}
 
+	public static ScheduledCourse[] parseTrainingSchedule(String text, TimeRange weekRange, TimeInfo timeRange) {
+		String[] lines = breakLines(text);
+		ScheduledCourse[] ret = new ScheduledCourse[lines.length];
+		for (int i = 0; i < lines.length; i++) {
+			String line = lines[i];
+			String[] values = line.split(" ");
+			if (values.length != 3)
+				throw new IllegalArgumentException("import.excel.training-schedule :" + line);
+			ScheduledCourse schedule = new ScheduledCourse();
+			schedule.course = values[0].trim();
+			schedule.site = values[1].trim();
+			schedule.teacher = values[2].trim();
+			schedule.timeRange = new TimeRange();
+			if (weekRange != null) {
+				schedule.timeRange.weeknoStart = weekRange.weeknoStart;
+				schedule.timeRange.weeknoEnd = weekRange.weeknoEnd;
+			}
+			if (timeRange != null) {
+				schedule.timeRange.timeStart = timeRange.timeStart;
+				schedule.timeRange.timeEnd = timeRange.timeEnd;
+			}
+			ret[i] = schedule;
+		}
+		return ret;
+	}
+
+	final Pattern WEEK_RANGE = Pattern.compile("(\\d+)(?:[^\\d]+(\\d+))?");
+
+	public static TimeRange parseTrainingWeeknoRange(String text) {
+		Matcher m = WEEK_RANGE.matcher(text);
+		if (m.find()) {
+			TimeRange ret = new TimeRange();
+			ret.weeknoStart = Byte.parseByte(m.group(1));
+			String weeknoEndStr = m.group(2);
+			ret.weeknoEnd = (weeknoEndStr != null ? Byte.parseByte(weeknoEndStr) : ret.weeknoStart);
+			return ret;
+		}
+		return null;
+	}
+
+	public static String[] breakLines(String text) {
+		String lineBreakPattern = "(\\s*)?[\r\n]+(\\s*)?";
+		String[] lines = text.split(lineBreakPattern);
+		return lines;
+	}
+
 	public static String atLocaton(Row row) {
 		return "@Sheet【" + row.getSheet().getSheetName() + "】行【" + (row.getRowNum() + 1) + "】";
 	}
@@ -182,4 +272,5 @@ public interface TextParser {
 	public static String atLocaton(Cell cell) {
 		return "@Sheet【" + cell.getSheet().getSheetName() + "】单元格【" + cell.getAddress() + "】";
 	}
+
 }

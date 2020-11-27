@@ -11,12 +11,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import com.jytec.cs.excel.ClassCourseImporter;
 import com.jytec.cs.excel.ScheduleImporter;
 import com.jytec.cs.excel.SiteImporter;
+import com.jytec.cs.excel.TrainingScheduleImporter;
 
 @SpringBootTest
 public class ImportExcelTest {
 	private @Autowired ClassCourseImporter classCourseImporter;
 	private @Autowired SiteImporter roomImporter;
 	private @Autowired ScheduleImporter scheduleImporter;
+	private @Autowired TrainingScheduleImporter trainingScheduleImporter;
 	// private @Autowired DeptRepository deptRepository;
 	// private @Autowired MajorRepository majorRepository;
 
@@ -38,6 +40,14 @@ public class ImportExcelTest {
 		scheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
 		file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-2.xlsx");
 		scheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
+	}
+	
+	@Test
+	public void testImportScheduleOfTrainingCourse() throws EncryptedDocumentException, IOException {
+		File file = new File("C:/Users/langlan/Desktop/课表/schedule-training-1.xlsx");
+		trainingScheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
+		// file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-2.xlsx");
+		// scheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
 	}
 
 }
