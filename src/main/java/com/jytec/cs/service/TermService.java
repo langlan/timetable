@@ -43,7 +43,8 @@ public class TermService {
 		Term term = Term.of(termYear, termMonth); // also validated.
 		termRepository.findById(term.getId()).orElseGet(() -> termRepository.save(term));
 
-		CalenderWrapper cw = Dates.wrapper().letMondayFirst().with(new SimpleDateFormat("yyyyMMdd"));
+		CalenderWrapper cw = Dates.wrapper().letMondayFirst()
+				.with(new SimpleDateFormat(com.jytec.cs.domain.Date.DATE_FORMAT));
 		cw.go(firstWeek);
 
 		// TODO: delete existing weeks and dates

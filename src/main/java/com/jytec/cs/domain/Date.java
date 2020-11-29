@@ -5,8 +5,10 @@ import javax.persistence.Id;
 
 @Entity
 public class Date { // 教学日期
+	public static final String DATE_FORMAT = "yyyy-MM-dd";
+	
 	@Id
-	private String date; // yyyyMMdd
+	private String date;
 	private byte weekno; // 1 based
 	private byte dayOfWeek; // 1based
 	private short year;

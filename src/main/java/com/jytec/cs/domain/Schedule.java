@@ -28,7 +28,7 @@ public class Schedule {
 	private short termYear;
 	private byte termMonth;
 	private byte weekno, dayOfWeek;
-	private String date;
+	private String date; // format: ref Date.date
 	private byte timeStart, timeEnd; // 起止课时
 	// Other
 	private String trainingType; // N/S/E for 非实训|校内实训|企业实训

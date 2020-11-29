@@ -12,8 +12,8 @@ public class Week {
 	private byte termMonth;
 	private byte weekno;
 	@Id
-	private String firstDay; // yyyyMMdd
-	private String lastDay; // yyyyMMdd
+	private String firstDay; // format: ref Date.date
+	private String lastDay; // format: ref Date.date
 
 	public short getTermYear() {
 		return termYear;
