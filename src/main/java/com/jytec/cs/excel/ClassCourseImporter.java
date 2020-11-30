@@ -36,6 +36,7 @@ import com.jytec.cs.domain.Dept;
 import com.jytec.cs.domain.Major;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
+import com.jytec.cs.service.AutoCreateService;
 
 @Service
 public class ClassCourseImporter {
@@ -46,6 +47,7 @@ public class ClassCourseImporter {
 	private @Autowired ClassRepository classRepository;
 	private @Autowired CourseRepository courseRepository;
 	private @Autowired ClassCourseRepository classCourseRepository;
+	private @Autowired AutoCreateService autoCreateService;
 
 	@Transactional
 	public void importFile(Term term, File file) throws EncryptedDocumentException, IOException {
@@ -175,12 +177,7 @@ public class ClassCourseImporter {
 
 			// find or create teacher
 			String[] teacherNames = _teacherNames.split("/");
-			Teacher teacher = getOrCreateTeacher(teacherCode, teacherNames[0]);
-			// reset code for auto-create before.
-			if (!teacherCode.equals(teacher.getCode())) {
-				teacher.setCode(teacherCode);
-				teacherRepository.save(teacher);
-			}
+			Teacher teacher = autoCreateService.findTeacherByNameOrCreateWithCode(teacherNames[0], teacherCode);
 			// auto-create later if necessary
 			for (int ti = 1; ti < teacherNames.length; ti++) {
 				otherTeacherNames.add(teacherNames[ti]);
@@ -198,18 +195,8 @@ public class ClassCourseImporter {
 			classCourseRepository.save(classCourse);
 			count++;
 		}
-		otherTeacherNames.forEach(it -> getOrCreateTeacher("T" + it, it)); // use "T" + name as temp-code.
+		otherTeacherNames.forEach(it -> autoCreateService.findTeacherByNameOrCreateWithAutoCode(it));
 		log.info("导入班级选课记录共【" + count + "/" + sheet.getLastRowNum() + "】");
-	}
-
-	private Teacher getOrCreateTeacher(String teacherCode, String name) {
-		return teacherRepository.findByName(name).orElseGet(() -> {
-			Teacher _teacher = new Teacher();
-			_teacher.setCode(teacherCode);
-			_teacher.setName(name);
-			teacherRepository.save(_teacher);
-			return _teacher;
-		});
 	}
 
 }

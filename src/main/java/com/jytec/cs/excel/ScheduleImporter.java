@@ -38,6 +38,7 @@ import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.TextParser.ScheduledCourse;
 import com.jytec.cs.excel.TextParser.TimeRange;
+import com.jytec.cs.service.AutoCreateService;
 
 @Service
 public class ScheduleImporter {
@@ -48,6 +49,7 @@ public class ScheduleImporter {
 	private @Autowired TeacherRepository teacherRepository;
 	private @Autowired SiteRepository siteRepository;
 	private @Autowired ScheduleRepository scheduleRespository;
+	private @Autowired AutoCreateService autoCreateService;
 
 	@Transactional
 	public void importFile(Term term, int classYear, File file) throws EncryptedDocumentException, IOException {
@@ -180,10 +182,7 @@ public class ScheduleImporter {
 							String msg = "找不到教师【" + sc.teacher + "】【" + scheduleText + "】" + atLocaton(scheduledCell);
 							// throw new IllegalStateException(msg);
 							log.warn(msg);
-							Teacher _teacher = new Teacher();
-							_teacher.setName(sc.teacher);
-							_teacher.setCode("T" + sc.teacher); // marker: auto-create.
-							return teacherRepository.save(_teacher);
+							return autoCreateService.createTeacherWithAutoCode(sc.teacher);
 						});
 					}
 
@@ -194,10 +193,7 @@ public class ScheduleImporter {
 							String msg = "找不到上课地点【" + sc.site + "】【" + scheduleText + "】" + atLocaton(scheduledCell);
 							log.warn(msg);
 							// throw new IllegalStateException(warn);
-							Site _site = new Site();
-							_site.setName(sc.site);
-							_site.setCode("T" + sc.site); // marker: auto-create.
-							return siteRepository.save(_site);
+							return autoCreateService.createSiteWithAutoCode(sc.site);
 						});
 					} catch (IncorrectResultSizeDataAccessException | NonUniqueResultException e) {
 						throw new IllegalStateException("非唯一：存在多个同名上课地点【" + sc.site + "】" + atLocaton(scheduledCell));
