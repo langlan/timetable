@@ -81,7 +81,18 @@ public class ScheduleImporter {
 			return;
 		}
 
-		// handle title-row
+		// try recognize term and validate.
+		Row titleRow = sheet.getRow(0);
+		String title = TextParser.rowString(titleRow);
+		Term pTerm = TextParser.parseTerm(title);
+		if (pTerm == null) {
+			log.warn("无法从标题中识别学期：" + title + atLocaton(titleRow));
+		} else {
+			if (pTerm.getTermYear() != term.getTermYear() || pTerm.getTermMonth() != term.getTermMonth())
+				throw  new IllegalArgumentException("表格标题【" + title + "】与指定的学期不同！");
+		}
+		
+		// handle columns header 
 		int classColIndex = -1;
 		TimeInfo[] timeInfos = new TimeInfo[headerRow.getLastCellNum()];
 		for (int i = 0; i < headerRow.getLastCellNum(); i++) {
@@ -235,4 +246,5 @@ public class ScheduleImporter {
 		// Should it be called through other UI to keep data-import and date-build independent.
 		scheduleRespository.updateDateByTerm(term.getTermYear(), term.getTermMonth());
 	}
+
 }

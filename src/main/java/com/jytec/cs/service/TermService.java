@@ -2,7 +2,6 @@ package com.jytec.cs.service;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Optional;
 
 import javax.transaction.Transactional;
 
@@ -37,10 +36,10 @@ public class TermService {
 	 * @return
 	 */
 	@Transactional
-	public void initTermDate(short termYear, byte termMonth, Date firstWeek, int numberOfWeeks) {
+	public void initTermDate(short termYear, boolean autumn, Date firstWeek, int numberOfWeeks) {
 		Assert.notNull(firstWeek, "请选择一个日期将其所在周做为第一个学周！");
 
-		Term term = Term.of(termYear, termMonth); // also validated.
+		Term term = autumn ? Term.ofAutumn(termYear) : Term.ofSpring(termYear); // also validated.
 		termRepository.findById(term.getId()).orElseGet(() -> termRepository.save(term));
 
 		CalenderWrapper cw = Dates.wrapper().letMondayFirst()
@@ -57,8 +56,7 @@ public class TermService {
 			week.setFirstDay(cw.goMonday().format());
 			week.setLastDay(cw.goSunday().format());
 			week.setWeekno((byte) (i + 1)); // 1 based.
-			week.setTermYear(termYear);
-			week.setTermMonth(termMonth);
+			week.setTerm(term);
 			weekRepository.save(week);
 
 			// initialize date
@@ -82,13 +80,6 @@ public class TermService {
 	@Transactional
 	public int rebuildScheduleDate(Term term) {
 		return scheduleRepository.updateDateByTerm(term.getTermYear(), term.getTermMonth());
-	}
-
-	@Transactional
-	public Term getOrCreateTerm(short termYear, byte termMonth) {
-		Term _term = Term.of(termYear, termMonth);
-		Optional<Term> term = termRepository.findById(_term.getId());
-		return term.orElseGet(() -> termRepository.save(_term));
 	}
 
 }

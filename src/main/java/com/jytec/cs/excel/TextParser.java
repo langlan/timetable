@@ -10,6 +10,7 @@ import org.apache.poi.ss.usermodel.Row;
 
 import com.jytec.cs.domain.Class;
 import com.jytec.cs.domain.Major;
+import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.TrainingScheduleImporter.TitleInfo.TimeInfo;
 
 public interface TextParser {
@@ -161,6 +162,15 @@ public interface TextParser {
 		return text.trim();
 	}
 
+	/** Concatenate all cell strings */
+	public static String rowString(Row row) {
+		StringBuilder sb = new StringBuilder();
+		for(int i=0; i<row.getLastCellNum(); i++ ) {
+			sb.append(cellString(row.getCell(i)));
+		}
+		return sb.toString();
+	}
+
 	// ========== Schedule ============
 	static final Pattern TIME_RANGE = Pattern.compile("(\\d+)(-(\\d+))?(单|双)?\\((\\d+),(\\d+)\\)");
 
@@ -271,6 +281,20 @@ public interface TextParser {
 
 	public static String atLocaton(Cell cell) {
 		return "@Sheet【" + cell.getSheet().getSheetName() + "】单元格【" + cell.getAddress() + "】";
+	}
+
+	static Pattern TERM_PATTERN = Pattern.compile("(\\d{4,})" // termYear : required
+			+ "[^\\d]+" //
+			+ "(?:\\d{4,}.*([1|一]学期)|[2|二]学期|(秋)|春)"); // season part : one of
+
+	static Term parseTerm(String text) {
+		Matcher m = TERM_PATTERN.matcher(text);
+		if (m.find()) {
+			int termYear = Integer.parseInt(m.group(1));
+			boolean autumn = m.group(2) != null || m.group(3) != null;
+			return autumn ? Term.ofAutumn(termYear) : Term.ofSpring(termYear);
+		}
+		return null;
 	}
 
 }

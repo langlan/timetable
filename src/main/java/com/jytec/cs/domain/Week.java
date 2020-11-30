@@ -5,9 +5,11 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import com.jytec.cs.domain.Term.TermAware;
+
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = { "termYear", "termMonth", "weekno" }))
-public class Week {
+public class Week implements TermAware{
 	private short termYear;
 	private byte termMonth;
 	private byte weekno;

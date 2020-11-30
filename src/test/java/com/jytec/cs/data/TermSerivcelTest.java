@@ -14,14 +14,13 @@ import com.jytec.cs.util.Dates;
 public class TermSerivcelTest {
 	private @Autowired TermService termService;
 	public static final short TERM_YEAR = 2020;
-	public static final byte TERM_MONTH = 9;
-	public static final Date FIRST_WEEK = Dates.of(TERM_YEAR, TERM_MONTH, 7);
+	public static final Date FIRST_WEEK = Dates.of(TERM_YEAR, 9, 7);
 	public static final int NUMBER_OF_WEEKS = 17;
-	public static final Term TERM = Term.of(TERM_YEAR, TERM_MONTH);
+	public static final Term TERM = Term.ofAutumn(TERM_YEAR);
 
 	@Test
 	public void testInitWeekAndDate() {
-		termService.initTermDate(TERM_YEAR, TERM_MONTH, FIRST_WEEK, NUMBER_OF_WEEKS);
+		termService.initTermDate(TERM_YEAR, true, FIRST_WEEK, NUMBER_OF_WEEKS);
 	}
 
 }

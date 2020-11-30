@@ -2,12 +2,14 @@ package com.jytec.cs;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import com.jytec.cs.domain.Class;
+import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.TextParser;
 import com.jytec.cs.excel.TextParser.ScheduledCourse;
 
@@ -69,7 +71,7 @@ public class TextParserTest {
 		assertEquals(2, classes.length);
 
 	}
-	
+
 	@Test
 	public void testPraseTrainingSchedule() {
 		ScheduledCourse[] schedules = TextParser.parseTrainingSchedule("牛牛检测实训 JJ-109 吕牛牛", null, null);
@@ -77,8 +79,27 @@ public class TextParserTest {
 		assertEquals("牛牛检测实训", schedules[0].course);
 		assertEquals("JJ-109", schedules[0].site);
 		assertEquals("吕牛牛", schedules[0].teacher);
-		
+	}
 
+	@Test
+	public void testParseTerm() {
+		Term term = TextParser.parseTerm("2020-2021学年第一学期");
+		assertNotNull(term);
+		assertEquals(2020, term.getTermYear());
+		assertEquals(Term.TERM_MONTH_AUTUMN, term.getTermMonth());
+		term = TextParser.parseTerm("2020-2021学年第二学期");
+		assertEquals(2021, term.getTermYear());
+		assertEquals(Term.TERM_MONTH_SPRING, term.getTermMonth());
+		term = TextParser.parseTerm("2021学年第二学期");
+		assertEquals(2021, term.getTermYear());
+		assertEquals(Term.TERM_MONTH_SPRING, term.getTermMonth());
+		
+		term = TextParser.parseTerm("2020学年秋季学期");
+		assertEquals(2020, term.getTermYear());
+		assertEquals(Term.TERM_MONTH_AUTUMN, term.getTermMonth());
+		term = TextParser.parseTerm("2021学年春季学期");
+		assertEquals(2021, term.getTermYear());
+		assertEquals(Term.TERM_MONTH_SPRING, term.getTermMonth());
 	}
 
 }
