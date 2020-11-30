@@ -13,6 +13,10 @@ import javax.persistence.Table;
 })
 @Entity
 public class Schedule {
+	public static final String TRAININGTYPE_NON = "N";
+	public static final String TRAININGTYPE_SCHOOL = "S";
+	public static final String TRAININGTYPE_ENTERPRISE = "E";
+	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;

@@ -47,8 +47,6 @@ import com.jytec.cs.service.AutoCreateService;
 
 @Service
 public class TrainingScheduleImporter {
-	public static final String TRAININGTYPE_SCHOOL = "S";
-	public static final String TRAININGTYPE_ENTERPRISE = "E";
 	private static final Log log = LogFactory.getLog(TrainingScheduleImporter.class);
 	private @Autowired ClassCourseRepository classCourseRepository;
 	// private @Autowired ClassRepository classRepository;
@@ -199,7 +197,8 @@ public class TrainingScheduleImporter {
 								continue; // exclude even when odd-only, or exclude odd when even-only
 							}
 							Schedule schedule = new Schedule();
-							schedule.setTrainingType(TRAININGTYPE_SCHOOL);
+							// TODO: for TRAININGTYPE_ENTERPRISE
+							schedule.setTrainingType(Schedule.TRAININGTYPE_SCHOOL);
 							schedule.setTermYear(term.getTermYear());
 							schedule.setTermMonth(term.getTermMonth());
 							schedule.setTheClass(classCourse.getTheClass());

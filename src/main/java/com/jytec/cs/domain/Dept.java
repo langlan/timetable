@@ -7,6 +7,9 @@ import javax.persistence.Id;
 
 @Entity
 public class Dept { // 系别
+	public static String DEPT_TYPE_NORMAL = "N";
+	public static String DEPT_TYPE_ELSE = "E";
+	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;

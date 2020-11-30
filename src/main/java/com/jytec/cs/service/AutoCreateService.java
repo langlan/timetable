@@ -60,6 +60,7 @@ public class AutoCreateService {
 		site.setName(name);
 		site = siteRepository.save(site);
 		site.setCode("T" + site.getId()); // code strategy.
+		log.info("自动创建场地【" + name + "】－code【" + site.getCode() + "】");
 		return siteRepository.save(site);
 	}
 

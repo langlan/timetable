@@ -28,7 +28,6 @@ import com.jytec.cs.dao.ClassRepository;
 import com.jytec.cs.dao.CourseRepository;
 import com.jytec.cs.dao.DeptRepository;
 import com.jytec.cs.dao.MajorRepository;
-import com.jytec.cs.dao.TeacherRepository;
 import com.jytec.cs.domain.Class;
 import com.jytec.cs.domain.ClassCourse;
 import com.jytec.cs.domain.Course;
@@ -43,7 +42,7 @@ public class ClassCourseImporter {
 	private static final Log log = LogFactory.getLog(ClassCourseImporter.class);
 	private @Autowired DeptRepository deptRepository;
 	private @Autowired MajorRepository majorRepository;
-	private @Autowired TeacherRepository teacherRepository;
+	// private @Autowired TeacherRepository teacherRepository;
 	private @Autowired ClassRepository classRepository;
 	private @Autowired CourseRepository courseRepository;
 	private @Autowired ClassCourseRepository classCourseRepository;
