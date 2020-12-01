@@ -157,9 +157,13 @@ public class TrainingScheduleImporter {
 					log.info("忽略班级（非指定年级）：【" + classesName + "】" + atLocaton(row));
 					continue;
 				}
-				if (scheduleRespository.countTrainingByClassAndTerm(pc.getName(), pc.getDegree(), term.getTermYear(),
-						term.getTermMonth()) > 0) {
-					log.info("忽略班级（已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(row));
+
+				// fixed issue : same class may have multiple rows to correspond different week-no.
+				// so we can not use term+class (use term+class+week-no instead) to determine duplicate import.
+				int count = scheduleRespository.countTrainingByClassAndTermAndWeek(pc.getName(), pc.getDegree(),
+						term.getTermYear(), term.getTermMonth(), weekRange.weeknoStart, weekRange.weeknoEnd);
+				if (count > 0) {
+					log.info("忽略班级（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(row));
 					continue;
 				}
 

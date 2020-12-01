@@ -12,14 +12,16 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
 	@Query("Select count(*) From Schedule s Where " //
 			+ "s.termYear=?3 And s.termMonth=?4 And " //
-			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType='"+ Schedule.TRAININGTYPE_NON +"'")
+			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType='" + Schedule.TRAININGTYPE_NON + "'")
 	int countNonTrainingByClassAndTerm(String className, String classDegree, short termYear, byte termMonth);
 
 	@Query("Select count(*) From Schedule s Where " //
 			+ "s.termYear=?3 And s.termMonth=?4 And " //
-			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType<>'"+ Schedule.TRAININGTYPE_NON +"'")
-	int countTrainingByClassAndTerm(String name, String degree, short termYear, byte termMonth);
-	
+			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType<>'" + Schedule.TRAININGTYPE_NON
+			+ "' And " + "s.weekno between ?5 And ?6")
+	int countTrainingByClassAndTermAndWeek(String name, String degree, short termYear, byte termMonth, byte weeknoStart,
+			byte weeknoEnd);
+
 	/**
 	 * use when rebuild/init term data, or after import schedule data.
 	 * 
@@ -32,5 +34,4 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 			+ "Where s.termYear=?1 And s.termMonth=?2")
 	int updateDateByTerm(short termYear, byte termMonth);
 
-	
 }
