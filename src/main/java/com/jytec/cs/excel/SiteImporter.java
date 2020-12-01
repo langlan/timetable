@@ -110,7 +110,8 @@ public class SiteImporter {
 				if (siteKeys.add(key)) { // check existence.
 					imported++;
 					log.info("imported new site: " + key);
-					Site exist = indexedAutoSites.get(site.getName());
+					// use remove not get, to compatible with same-name records.
+					Site exist = indexedAutoSites.remove(site.getName());
 					if (exist != null) {
 						exist.setDept(site.getDept());
 						exist.setCode(site.getCode());

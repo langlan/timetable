@@ -7,7 +7,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 
 @Entity
-public class ClassCourse {
+public class ClassCourse extends BaseModel<Long>{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;

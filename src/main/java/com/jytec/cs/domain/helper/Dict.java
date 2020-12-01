@@ -1,4 +1,4 @@
-package com.jytec.cs.domain;
+package com.jytec.cs.domain.helper;
 
 import java.util.HashMap;
 import java.util.Map;

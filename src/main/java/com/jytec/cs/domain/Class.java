@@ -12,7 +12,7 @@ import javax.persistence.UniqueConstraint;
 @Table(uniqueConstraints = { //
 		@UniqueConstraint(columnNames = { "major_id", "year", "classNo" }) //
 })
-public class Class {
+public class Class extends BaseModel<Long>{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;

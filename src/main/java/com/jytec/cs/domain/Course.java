@@ -4,7 +4,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Entity
-public class Course {
+public class Course extends BaseModel<String>{
 	@Id
 	private String code;
 	private String name; // 课程名

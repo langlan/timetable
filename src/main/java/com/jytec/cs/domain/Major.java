@@ -9,7 +9,7 @@ import javax.persistence.ManyToOne;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.jytec.cs.domain.helper.ModelPropToAsIdSerializer;
+import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Entity
 public class Major { // 专业
@@ -21,7 +21,7 @@ public class Major { // 专业
 	private String degree; // 高职/三二
 
 	@JsonProperty("deptId")
-	@JsonSerialize(using = ModelPropToAsIdSerializer.class)
+	@JsonSerialize(using = ModelPropAsIdSerializer.class)
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Dept dept;
 

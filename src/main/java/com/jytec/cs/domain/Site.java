@@ -10,7 +10,7 @@ import javax.persistence.UniqueConstraint;
 
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = { "name", "roomType" }))
-public class Site {
+public class Site extends BaseModel<Integer>{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;

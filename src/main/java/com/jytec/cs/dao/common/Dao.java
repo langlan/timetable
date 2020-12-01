@@ -20,4 +20,6 @@ public interface Dao {
 	<T> List<T> find(String ql, Object... vars);
 
 	<T> T get(Class<T> clazz, Serializable id);
+
+	// <T> T save(T d);
 }

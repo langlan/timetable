@@ -14,7 +14,7 @@ import javax.persistence.UniqueConstraint;
 		@UniqueConstraint(columnNames = { "phone" }), //
 		@UniqueConstraint(columnNames = { "mail" }) //
 })
-public class Teacher {
+public class Teacher extends BaseModel<Long>{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;

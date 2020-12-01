@@ -8,7 +8,7 @@ import javax.persistence.Id;
 import org.springframework.util.Assert;
 
 @Entity
-public class Term {
+public class Term extends BaseModel<String>{
 	public static final short TERM_YEAR_MIN_VALUE = 2000;
 	public static final short TERM_YEAR_MAX_VALUE = 2100;
 	public static final byte TERM_MONTH_AUTUMN = 9;

@@ -4,7 +4,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Entity
-public class Date { // 教学日期
+public class Date extends BaseModel<String>{ // 教学日期
 	public static final String DATE_FORMAT = "yyyy-MM-dd";
 	
 	@Id

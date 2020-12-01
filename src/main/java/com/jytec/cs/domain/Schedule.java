@@ -12,7 +12,7 @@ import javax.persistence.Table;
 		// "dayOfWeek", "timeStart", "timeEnd" })
 })
 @Entity
-public class Schedule {
+public class Schedule extends BaseModel<Long>{
 	public static final String TRAININGTYPE_NON = "N";
 	public static final String TRAININGTYPE_SCHOOL = "S";
 	public static final String TRAININGTYPE_ENTERPRISE = "E";

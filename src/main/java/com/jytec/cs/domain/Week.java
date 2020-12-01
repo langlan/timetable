@@ -9,7 +9,7 @@ import com.jytec.cs.domain.Term.TermAware;
 
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = { "termYear", "termMonth", "weekno" }))
-public class Week implements TermAware{
+public class Week extends BaseModel<String> implements TermAware{
 	private short termYear;
 	private byte termMonth;
 	private byte weekno;
