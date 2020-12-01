@@ -12,7 +12,7 @@ import com.jytec.cs.service.DeptService;
 import com.jytec.cs.service.api.DeptSearchParams;
 
 @RestController
-@RequestMapping("/dept")
+@RequestMapping("/depts")
 public class DeptController extends AbstractModelController<Dept, Integer> {
 	private @Autowired DeptService deptService;
 

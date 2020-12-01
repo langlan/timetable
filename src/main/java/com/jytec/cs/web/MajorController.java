@@ -12,7 +12,7 @@ import com.jytec.cs.service.MajorService;
 import com.jytec.cs.service.api.MajorSearchParams;
 
 @RestController
-@RequestMapping("/major")
+@RequestMapping("/majors")
 public class MajorController extends AbstractModelController<Major, Integer>{
 	private @Autowired MajorService majorService;
 

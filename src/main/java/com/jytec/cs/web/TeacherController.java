@@ -12,7 +12,7 @@ import com.jytec.cs.service.TeacherService;
 import com.jytec.cs.service.api.TeacherSearchParams;
 
 @RestController
-@RequestMapping("/teacher")
+@RequestMapping("/teachers")
 public class TeacherController extends AbstractModelController<Teacher, Long> {
 	private @Autowired TeacherService teacherService;
 
