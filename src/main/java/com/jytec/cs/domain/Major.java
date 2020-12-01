@@ -1,10 +1,15 @@
 package com.jytec.cs.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.jytec.cs.domain.helper.ModelPropToAsIdSerializer;
 
 @Entity
 public class Major { // 专业
@@ -14,7 +19,10 @@ public class Major { // 专业
 	private String name;
 	private String shortName;
 	private String degree; // 高职/三二
-	@ManyToOne
+
+	@JsonProperty("deptId")
+	@JsonSerialize(using = ModelPropToAsIdSerializer.class)
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Dept dept;
 
 	public int getId() {

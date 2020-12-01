@@ -3,12 +3,11 @@ package com.jytec.cs.dao;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 import com.jytec.cs.domain.Schedule;
 import com.jytec.cs.service.TermService;
 
-@RepositoryRestResource(collectionResourceRel = "schedule", path = "schedule")
+//@RepositoryRestResource(collectionResourceRel = "schedule", path = "schedule")
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
 	@Query("Select count(*) From Schedule s Where " //

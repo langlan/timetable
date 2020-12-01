@@ -5,11 +5,10 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 import com.jytec.cs.domain.ClassCourse;
 
-@RepositoryRestResource(collectionResourceRel = "class-course", path = "class-course")
+//@RepositoryRestResource(collectionResourceRel = "class-course", path = "class-course")
 public interface ClassCourseRepository extends JpaRepository<ClassCourse, Long> {
 
 	@Query("Select CONCAT(cc.theClass.name, '[', cc.theClass.degree, ']-', cc.course.code) "

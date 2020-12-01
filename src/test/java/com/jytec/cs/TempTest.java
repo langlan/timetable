@@ -1,7 +1,11 @@
 package com.jytec.cs;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -13,6 +17,13 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.SheetUtil;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jytec.cs.domain.Dept;
+import com.jytec.cs.domain.Major;
+import com.jytec.cs.service.ModelService;
+import com.jytec.cs.service.DeptService;
 
 public class TempTest {
 	@Test
@@ -95,16 +106,39 @@ public class TempTest {
 	// copy from SheetUtil
 	private Cell getCellWithMerges(Sheet sheet, int rowIx, int colIx) {
 		for (CellRangeAddress mergedRegion : sheet.getMergedRegions()) {
-            if (mergedRegion.isInRange(rowIx, colIx)) {
-                // The cell wanted is in this merged range
-                // Return the primary (top-left) cell for the range
-                Row r = sheet.getRow(mergedRegion.getFirstRow());
-                if (r != null) {
-                    return r.getCell(mergedRegion.getFirstColumn());
-                }
-            }
-        }
+			if (mergedRegion.isInRange(rowIx, colIx)) {
+				// The cell wanted is in this merged range
+				// Return the primary (top-left) cell for the range
+				Row r = sheet.getRow(mergedRegion.getFirstRow());
+				if (r != null) {
+					return r.getCell(mergedRegion.getFirstColumn());
+				}
+			}
+		}
 		return sheet.getRow(rowIx).getCell(colIx);
+	}
+
+	@Test
+	public void testJson() throws JsonProcessingException {
+		Major m = new Major();
+		m.setId(1);
+		Dept dept = new Dept();
+		dept.setId(1);
+		m.setDept(dept);
+		System.out.println(new ObjectMapper().writeValueAsString(m));
+	}
+
+	@Test
+	public void testGeneric()
+			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		Class<?> clazz = (Class<?>) ((ParameterizedType) DeptService.class.getGenericSuperclass())
+				.getActualTypeArguments()[0];
+		assertEquals(Dept.class, clazz);
+
+		DeptService t = new DeptService();
+		Field clazzField = ModelService.class.getDeclaredField("clazz");
+		clazzField.setAccessible(true);
+		assertEquals(Dept.class, clazzField.get(t));
 	}
 
 }

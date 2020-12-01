@@ -5,11 +5,10 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 import com.jytec.cs.domain.Site;
 
-@RepositoryRestResource(collectionResourceRel = "site", path = "site")
+//@RepositoryRestResource(collectionResourceRel = "site", path = "site")
 public interface SiteRepository extends PagingAndSortingRepository<Site, Long> {
 
 	// @Query("Select r.name || FUNCTION('IFNULL', r.type, 'null') From Room r")

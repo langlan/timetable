@@ -7,13 +7,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @SpringBootApplication
-public class AccessingDataRestApplication {
+public class CsApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(AccessingDataRestApplication.class, args);
+		SpringApplication.run(CsApplication.class, args);
 	}
 	
-	@RequestMapping("/")
+	@RequestMapping("/t")
 	public String index() {
 		return "{\"msg\": \"hello world \"}";
 	}

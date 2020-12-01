@@ -26,7 +26,11 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-rest</artifactId>
+			<artifactId>spring-boot-starter-json</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
 		<!-- <dependency>
@@ -43,6 +47,11 @@
 		    <artifactId>sqlite-dialect</artifactId>
 		    <version>0.1.0</version>
 		</dependency>
+		<dependency>
+            <groupId>com.github.langlan</groupId>
+            <artifactId>langlan-sql-weaver</artifactId>
+            <version>1.2.0</version>
+        </dependency>
 
 		<dependency>
 			<groupId>org.apache.poi</groupId>
