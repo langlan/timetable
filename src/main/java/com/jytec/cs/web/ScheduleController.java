@@ -6,7 +6,9 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jytec.cs.domain.Schedule;
@@ -25,10 +27,20 @@ public class ScheduleController {
 		}
 		return scheduleService.search(params);
 	}
-	
-	//TODO: also map get to test easily.
-	@RequestMapping({ "/schedules-statis" })
-	public List<?> statistic(ScheduleStatisticParams params) {
+
+	@GetMapping("/{id}")
+	public Schedule get(@PathVariable Long id) {
+		return scheduleService.get(id);
+	}
+
+	// Remove? for now also map get to test easily.
+	@GetMapping({ "/schedules-statis" })
+	public List<?> statisticByGet(ScheduleStatisticParams params) {
+		return statistic(params);
+	}
+
+	@PostMapping({ "/schedules-statis" })
+	public List<?> statistic(@RequestBody ScheduleStatisticParams params) {
 		return scheduleService.statistic(params);
 	}
 }
