@@ -2,6 +2,7 @@ package com.jytec.cs.service;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import javax.transaction.Transactional;
 
@@ -15,15 +16,20 @@ import com.jytec.cs.dao.DateRepository;
 import com.jytec.cs.dao.ScheduleRepository;
 import com.jytec.cs.dao.TermRepository;
 import com.jytec.cs.dao.WeekRepository;
+import com.jytec.cs.dao.common.Dao;
 import com.jytec.cs.domain.Term;
 import com.jytec.cs.domain.Week;
+import com.jytec.cs.service.api.TermSearchParams;
 import com.jytec.cs.util.Dates;
 import com.jytec.cs.util.Dates.CalenderWrapper;
+
+import langlan.sql.weaver.Sql;
 
 @Service
 public class TermService {
 	private static final Log log = LogFactory.getLog(TermService.class);
 
+	private @Autowired Dao dao;
 	private @Autowired TermRepository termRepository;
 	private @Autowired WeekRepository weekRepository;
 	private @Autowired DateRepository dateRepository;
@@ -80,6 +86,19 @@ public class TermService {
 	@Transactional
 	public int rebuildScheduleDate(Term term) {
 		return scheduleRepository.updateDateByTerm(term.getTermYear(), term.getTermMonth());
+	}
+
+	@Transactional
+	public List<Term> search(TermSearchParams params) {
+		Sql ql = new Sql().select("m").from("Term m").where() //@formatter:off
+				.grp(true)
+					.like("m.name", params.q, true, true)
+				.endGrp()
+				.eq("m.termYear", params.termYear)
+				.eq("m.termMonth", params.termMonth)
+			.endWhere()
+			.orderBy("m.id"); //@formatter:on
+		return dao.find(ql.toString(), ql.vars());
 	}
 
 }

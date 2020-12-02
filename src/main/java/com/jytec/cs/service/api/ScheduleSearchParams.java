@@ -4,9 +4,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ScheduleSearchParams {
-	public Short termYear;
-	public Byte termMonth;
+public class ScheduleSearchParams extends TermSearchParams{
 	// TODO: public Range<Byte> weekno, dayOfWeek;
 	// TODO: public Range<String> date;
 	public Byte weekno, dayOfWeek;
@@ -30,21 +28,6 @@ public class ScheduleSearchParams {
 		this.yearMonth = yearMonth;
 	}
 
-	public short getTermYear() {
-		return termYear;
-	}
-
-	public void setTermYear(short termYear) {
-		this.termYear = termYear;
-	}
-
-	public byte getTermMonth() {
-		return termMonth;
-	}
-
-	public void setTermMonth(byte termMonth) {
-		this.termMonth = termMonth;
-	}
 
 	public byte getTimeStart() {
 		return timeStart;
@@ -124,14 +107,6 @@ public class ScheduleSearchParams {
 
 	public void setDate(String date) {
 		this.date = date;
-	}
-
-	public void setTermYear(Short termYear) {
-		this.termYear = termYear;
-	}
-
-	public void setTermMonth(Byte termMonth) {
-		this.termMonth = termMonth;
 	}
 
 	public void setTimeStart(Byte timeStart) {
