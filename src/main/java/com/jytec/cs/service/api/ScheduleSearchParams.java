@@ -14,7 +14,7 @@ public class ScheduleSearchParams {
 	public Byte timeStart, timeEnd;
 
 	public Long classId, teacherId;
-	public String courseId;
+	public String courseCode;
 	public Integer siteId;
 
 	public String trainingType;
@@ -78,12 +78,12 @@ public class ScheduleSearchParams {
 		this.teacherId = teacherId;
 	}
 
-	public String getCourseId() {
-		return courseId;
+	public String getCourseCode() {
+		return courseCode;
 	}
 
-	public void setCourseId(String courseId) {
-		this.courseId = courseId;
+	public void setCourseCode(String courseCode) {
+		this.courseCode = courseCode;
 	}
 
 	public Integer getSiteId() {

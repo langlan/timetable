@@ -39,7 +39,7 @@ public class ScheduleService extends ModelService<Schedule> {
 			.like("m.date", params.yearMonth, false, true)
 			// model-id
 			.eq("m.theClass.id", params.classId)
-			.eq("m.course.code", params.courseId)
+			.eq("m.course.code", params.courseCode)
 			.eq("m.teacher.id", params.teacherId)
 			.eq("m.site.id", params.siteId)
 		;//@formatter:on
