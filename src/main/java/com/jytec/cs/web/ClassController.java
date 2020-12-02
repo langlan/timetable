@@ -10,23 +10,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jytec.cs.domain.Class;
-import com.jytec.cs.domain.Teacher;
-import com.jytec.cs.service.TeacherService;
-import com.jytec.cs.service.api.TeacherSearchParams;
+import com.jytec.cs.domain.Major;
+import com.jytec.cs.service.ClassCourseService;
+import com.jytec.cs.service.api.ClassSearchParams;
 
 @RestController
-@RequestMapping("/teachers")
-public class TeacherController extends AbstractModelController<Teacher, Long> {
-	private @Autowired TeacherService teacherService;
+@RequestMapping("/classes")
+public class ClassController extends AbstractModelController<Major, Integer>{
+	private @Autowired ClassCourseService classCourseService;
 
 	@GetMapping
-	public List<Teacher> search(TeacherSearchParams params) {
-		return teacherService.search(params);
+	public List<Class> search(ClassSearchParams params){
+		return classCourseService.search(params);
 	}
 	
 	@GetMapping("/idc/{idc}")
 	public Class getByIdc(@PathVariable Integer idc) {
-		Optional<Class> r = teacherService.findByIdc(idc);
+		Optional<Class> r = classCourseService.findClassByIdc(idc);
 		return r.get();
 	}
 }

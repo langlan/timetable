@@ -10,5 +10,7 @@ import com.jytec.cs.domain.Class;
 public interface ClassRepository extends PagingAndSortingRepository<Class, Long> {
 
 	Optional<Class> findByNameAndDegree(String name, String degree);
+
+	Optional<Class> findByIdc(Integer idc);
 	
 }

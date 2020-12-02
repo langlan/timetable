@@ -30,6 +30,7 @@ public class Class extends BaseModel<Long> {
 	private short year; // 入学年
 	private byte classNo; // 班级号
 	private int size; // 学生人数
+	private Integer idc;
 
 	public long getId() {
 		return id;
@@ -85,6 +86,14 @@ public class Class extends BaseModel<Long> {
 
 	public void setSize(int size) {
 		this.size = size;
+	}
+
+	public Integer getIdc() {
+		return idc;
+	}
+
+	public void setIdc(Integer idc) {
+		this.idc = idc;
 	}
 
 }

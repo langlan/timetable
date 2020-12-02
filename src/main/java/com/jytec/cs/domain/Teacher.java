@@ -14,7 +14,7 @@ import javax.persistence.UniqueConstraint;
 		@UniqueConstraint(columnNames = { "phone" }), //
 		@UniqueConstraint(columnNames = { "mail" }) //
 })
-public class Teacher extends BaseModel<Long>{
+public class Teacher extends BaseModel<Long> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
@@ -23,6 +23,7 @@ public class Teacher extends BaseModel<Long>{
 	private String phone;
 	private String mail;
 	private boolean female;
+	private Integer idc;
 
 	public long getId() {
 		return id;
@@ -70,6 +71,14 @@ public class Teacher extends BaseModel<Long>{
 
 	public void setFemale(boolean female) {
 		this.female = female;
+	}
+
+	public Integer getIdc() {
+		return idc;
+	}
+
+	public void setIdc(Integer idc) {
+		this.idc = idc;
 	}
 
 }
