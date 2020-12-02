@@ -2,6 +2,7 @@ package com.jytec.cs.dao.common;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 public interface Dao {
 	/**
@@ -20,6 +21,8 @@ public interface Dao {
 	<T> List<T> find(String ql, Object... vars);
 
 	<T> T get(Class<T> clazz, Serializable id);
+
+	List<Map<String, Object>> findMaps(String string, Object... vars);
 
 	// <T> T save(T d);
 }

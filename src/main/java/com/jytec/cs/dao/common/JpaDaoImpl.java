@@ -2,10 +2,13 @@ package com.jytec.cs.dao.common;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
+import org.apache.poi.ss.formula.functions.T;
+import org.hibernate.transform.AliasToEntityMapResultTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +21,16 @@ public class JpaDaoImpl implements Dao {
 		Query q = prepareQuery(ql, vars);
 		@SuppressWarnings("unchecked")
 		List<T> list = q.getResultList();
+		return list;
+	}
+
+	@Override
+	public List<Map<String, Object>> findMaps(String ql, Object... vars) {
+		@SuppressWarnings("deprecation")
+		Query q = prepareQuery(ql, vars).unwrap(org.hibernate.query.Query.class)
+				.setResultTransformer(AliasToEntityMapResultTransformer.INSTANCE);
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> list = q.getResultList();
 		return list;
 	}
 

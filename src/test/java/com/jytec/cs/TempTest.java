@@ -22,7 +22,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jytec.cs.domain.Dept;
 import com.jytec.cs.domain.Major;
+import com.jytec.cs.domain.Schedule;
 import com.jytec.cs.service.ModelService;
+import com.jytec.cs.service.api.ScheduleSearchParams;
 import com.jytec.cs.service.DeptService;
 
 public class TempTest {
@@ -139,6 +141,15 @@ public class TempTest {
 		Field clazzField = ModelService.class.getDeclaredField("clazz");
 		clazzField.setAccessible(true);
 		assertEquals(Dept.class, clazzField.get(t));
+	}
+	
+	@Test
+	public void testFieldNames()
+			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		Field[] fields = ScheduleSearchParams.class.getDeclaredFields();
+		for(Field f : fields) {
+			System.out.print(f.getName() + ",");
+		}
 	}
 
 }

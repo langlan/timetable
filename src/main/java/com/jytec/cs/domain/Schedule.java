@@ -1,11 +1,16 @@
 package com.jytec.cs.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Table(uniqueConstraints = {
 		// @UniqueConstraint(columnNames = { "the_class_id", "course_id", "termYear", "termMonth", "weekno",
@@ -20,13 +25,21 @@ public class Schedule extends BaseModel<Long>{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
-	@ManyToOne
+	@JsonProperty("classId")
+	@JsonSerialize(using = ModelPropAsIdSerializer.class)
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Class theClass;
-	@ManyToOne
+	@JsonProperty("courseId")
+	@JsonSerialize(using = ModelPropAsIdSerializer.class)
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Course course;
-	@ManyToOne
+	@JsonProperty("teacherId")
+	@JsonSerialize(using = ModelPropAsIdSerializer.class)
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Teacher teacher;
-	@ManyToOne
+	@JsonProperty("siteId")
+	@JsonSerialize(using = ModelPropAsIdSerializer.class)
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Site site; // 上课地点
 	// 时间
 	private short termYear;
