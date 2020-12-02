@@ -6,6 +6,7 @@ import java.util.Optional;
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.jytec.cs.dao.ClassRepository;
 import com.jytec.cs.domain.Class;
@@ -15,6 +16,7 @@ import com.jytec.cs.service.api.CourseSearchParams;
 
 import langlan.sql.weaver.Sql;
 
+@Service
 public class ClassCourseService extends CommonService{
 	private @Autowired ClassRepository classRepository;
 
