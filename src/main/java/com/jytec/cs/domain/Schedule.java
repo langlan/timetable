@@ -29,7 +29,7 @@ public class Schedule extends BaseModel<Long>{
 	@JsonSerialize(using = ModelPropAsIdSerializer.class)
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Class theClass;
-	@JsonProperty("courseId")
+	@JsonProperty("courseCode")
 	@JsonSerialize(using = ModelPropAsIdSerializer.class)
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Course course;

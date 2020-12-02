@@ -1,12 +1,17 @@
 package com.jytec.cs.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = { "name", "roomType" }))
@@ -19,7 +24,9 @@ public class Site extends BaseModel<Integer>{
 	private String shortName;
 	private String roomType; // 标准教室|专业机房|...
 	private int capacity;
-	@ManyToOne
+	@JsonProperty("deptId")
+	@JsonSerialize(using = ModelPropAsIdSerializer.class)
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Dept dept; // 最终指派
 	private String multimedia;
 	private String name4Training; // 实训基地名

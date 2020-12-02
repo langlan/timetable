@@ -1,10 +1,15 @@
 package com.jytec.cs.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Entity
 public class ClassCourse extends BaseModel<Long>{
@@ -13,11 +18,17 @@ public class ClassCourse extends BaseModel<Long>{
 	private long id;
 	private short termYear;
 	private byte termMonth;
-	@ManyToOne
+	@JsonProperty("classId")
+	@JsonSerialize(using = ModelPropAsIdSerializer.class)
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Class theClass;
-	@ManyToOne
+	@JsonProperty("courseCode")
+	@JsonSerialize(using = ModelPropAsIdSerializer.class)
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Course course;
-	@ManyToOne
+	@JsonProperty("teacherId")
+	@JsonSerialize(using = ModelPropAsIdSerializer.class)
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Teacher teacher; // 单教师，或多教师第一个
 	private String teacherNames; // 原 excel 教师名，多教师以 '/'分隔
 
