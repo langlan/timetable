@@ -39,6 +39,16 @@ public interface TextParser {
 		return nameWithDegree;
 	}
 
+	final Pattern EMPTY_LOGICAL_VALUES = Pattern.compile("[无]");
+
+	/** return empty String if matches any predefined logical-empty-values. or return what it is originally. */
+	public static String handleLogicalEmpty(String text) {
+		if (EMPTY_LOGICAL_VALUES.matcher(text).matches()) {
+			return "";
+		}
+		return text;
+	}
+
 	/**
 	 * 
 	 * @param classNameWithDegree
@@ -84,8 +94,8 @@ public interface TextParser {
 			String majorShortName = m.group("major");
 			String year = "20" + m.group("year");
 			int classNoStart = Integer.parseInt(m.group("classno"));
-			String classNoToStr = m.group("classnoTo");
-			int classNoEnd = classNoToStr != null ? Integer.parseInt(classNoToStr) : classNoStart;
+			String classNoEndStr = m.group("classnoTo");
+			int classNoEnd = classNoEndStr != null ? Integer.parseInt(classNoEndStr) : classNoStart;
 			String degree = m.group("degree");
 			if (degree == null) {
 				degree = defaultDegree;
@@ -165,7 +175,7 @@ public interface TextParser {
 	/** Concatenate all cell strings */
 	public static String rowString(Row row) {
 		StringBuilder sb = new StringBuilder();
-		for(int i=0; i<row.getLastCellNum(); i++ ) {
+		for (int i = 0; i < row.getLastCellNum(); i++) {
 			sb.append(cellString(row.getCell(i)));
 		}
 		return sb.toString();

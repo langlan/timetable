@@ -1,6 +1,8 @@
 package com.jytec.cs.excel;
 
 import static com.jytec.cs.excel.TextParser.assertEquals;
+import static com.jytec.cs.excel.TextParser.cellString;
+import static com.jytec.cs.excel.TextParser.handleLogicalEmpty;
 import static com.jytec.cs.excel.TextParser.handleMalFormedDegree;
 
 import java.io.File;
@@ -61,21 +63,21 @@ public class ClassCourseImporter {
 		Sheet sheet = wb.getSheetAt(0);
 
 		Row titleRow = sheet.getRow(0);
-		assertEquals("学生学院", titleRow.getCell(18).toString());
+		assertEquals("学生学院", cellString(titleRow.getCell(18)));
 
-		assertEquals("专业名称", titleRow.getCell(0).toString()); // A-0
-		assertEquals("班级名称", titleRow.getCell(1).toString()); // B-1
-		assertEquals("课程代码", titleRow.getCell(2).toString()); // C-2
-		assertEquals("课程名称", titleRow.getCell(3).toString()); // D-3
-		assertEquals("课程性质", titleRow.getCell(10).toString()); // K-10-课程性质：公共基础|专业技能|专业技能（选）|实习环节|无
-		assertEquals("课程类别", titleRow.getCell(11).toString()); // L-11-课程类别：必修课|选修课|限定选修课|无
-		assertEquals("考核方式", titleRow.getCell(12).toString()); // M-12-考核方式：考试|考查|无
-		assertEquals("考核方式", titleRow.getCell(12).toString()); // M-12-考核方式：考试|考查|无
-		assertEquals("实验课是否跟理论", titleRow.getCell(13).toString()); // N-13
-		// assertEquals("公用资源", titleRow.getCell(14).toString()); // O-14－公用资源：否
-		assertEquals("场地要求", titleRow.getCell(15).toString()); // P-15
-		assertEquals("教师职工号", titleRow.getCell(4).toString()); // E-4-教师职工号
-		assertEquals("教师姓名", titleRow.getCell(5).toString()); // F-5-教师姓名
+		assertEquals("专业名称", cellString(titleRow.getCell(0))); // A-0
+		assertEquals("班级名称", cellString(titleRow.getCell(1))); // B-1
+		assertEquals("课程代码", cellString(titleRow.getCell(2))); // C-2
+		assertEquals("课程名称", cellString(titleRow.getCell(3))); // D-3
+		assertEquals("课程性质", cellString(titleRow.getCell(10))); // K-10-课程性质：公共基础|专业技能|专业技能（选）|实习环节|无
+		assertEquals("课程类别", cellString(titleRow.getCell(11))); // L-11-课程类别：必修课|选修课|限定选修课|无
+		assertEquals("考核方式", cellString(titleRow.getCell(12))); // M-12-考核方式：考试|考查|无
+		assertEquals("考核方式", cellString(titleRow.getCell(12))); // M-12-考核方式：考试|考查|无
+		assertEquals("实验课是否跟理论", cellString(titleRow.getCell(13))); // N-13
+		// assertEquals("公用资源", cellString(titleRow.getCell(14))); // O-14－公用资源：否
+		assertEquals("场地要求", cellString(titleRow.getCell(15))); // P-15
+		assertEquals("教师职工号", cellString(titleRow.getCell(4))); // E-4-教师职工号
+		assertEquals("教师姓名", cellString(titleRow.getCell(5))); // F-5-教师姓名
 
 		// Although enable caching, it is id-based, so we use logical-key witch is business-columns-based
 		boolean cacheReady = false;
@@ -96,18 +98,18 @@ public class ClassCourseImporter {
 		Set<String> otherTeacherNames = new HashSet<>();
 		for (int i = 1; i < sheet.getLastRowNum(); i++) {
 			Row row = sheet.getRow(i);
-			String deptName = row.getCell(18).toString();
-			String majorNameWithDegree = row.getCell(0).toString();
-			String classNameWithDegree = row.getCell(1).toString();
-			String courseCode = row.getCell(2).toString();
-			String courseName = row.getCell(3).toString();
-			String courseCate = row.getCell(10).toString();
-			String courseStyle = row.getCell(11).toString();
-			String courseExamineMethod = row.getCell(12).toString();
-			String courseLabByTheory = row.getCell(13).toString();
-			String courseLocationType = row.getCell(15).toString();
-			String teacherCode = row.getCell(4).toString();
-			String _teacherNames = row.getCell(5).toString();
+			String deptName = cellString(row.getCell(18));
+			String majorNameWithDegree = cellString(row.getCell(0));
+			String classNameWithDegree = cellString(row.getCell(1));
+			String courseCode = cellString(row.getCell(2));
+			String courseName = cellString(row.getCell(3));
+			String courseCate = cellString(row.getCell(10));
+			String courseStyle = cellString(row.getCell(11));
+			String courseExamineMethod = cellString(row.getCell(12));
+			String courseLabByTheory = cellString(row.getCell(13));
+			String courseLocationType = cellString(row.getCell(15));
+			String teacherCode = cellString(row.getCell(4));
+			String _teacherNames = cellString(row.getCell(5));
 
 			String classCourseKey = classNameWithDegree + "-" + courseCode;
 			String deptKey = deptName;
@@ -141,20 +143,20 @@ public class ClassCourseImporter {
 
 			// find or create major, class
 			Major major = majors.get(majorKey);
-			Class _class = TextParser.parseClass(classNameWithDegree);
+			Class pclass = TextParser.parseClass(classNameWithDegree);
 			Class theClass = classes.get(classKey); // find unique by name and degree.
 			if (major == null) {
-				major = _class.getMajor();
+				major = pclass.getMajor();
 				TextParser.parseMajor(majorKey, major);
 				major.setDept(dept);
 				majorRepository.save(major);
 				majors.put(majorKey, major);
 			} else {
-				_class.setMajor(major);
+				pclass.setMajor(major);
 			}
 
 			if (theClass == null) {
-				theClass = _class;
+				theClass = pclass;
 				theClass.setSize(30 + random.nextInt(20));
 				classes.put(classKey, theClass);
 				classRepository.save(theClass);
@@ -165,9 +167,9 @@ public class ClassCourseImporter {
 				Course _course = new Course();
 				_course.setCode(courseCode);
 				_course.setName(courseName);
-				_course.setCate(courseCate);
-				_course.setStyle(courseStyle);
-				_course.setExamineMethod(courseExamineMethod);
+				_course.setCate(handleLogicalEmpty(courseCate));
+				_course.setStyle(handleLogicalEmpty(courseStyle));
+				_course.setExamineMethod(handleLogicalEmpty(courseExamineMethod));
 				_course.setLabByTheory("是".equals(courseLabByTheory));
 				_course.setLocationType(courseLocationType);
 				courseRepository.save(_course);
