@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.jytec.cs.dao.ClassRepository;
 import com.jytec.cs.domain.Class;
+import com.jytec.cs.domain.Course;
 import com.jytec.cs.service.api.ClassSearchParams;
 import com.jytec.cs.service.api.CourseSearchParams;
 
@@ -34,15 +35,15 @@ public class ClassCourseService extends CommonService{
 	}
 	
 	@Transactional
-	public List<com.jytec.cs.domain.Class> search(CourseSearchParams params) {
-		Sql ql = new Sql().select("m").from("Class m").where() //@formatter:off
+	public List<Course> search(CourseSearchParams params) {
+		Sql ql = new Sql().select("m").from("Course m").where() //@formatter:off
 			.grp(true)
 				.like("m.name", params.q, true, true)
 				.like("m.cate", params.q, true, true)
 				.like("m.style", params.q, true, true)
 				.like("m.method", params.q, true, true)
 			.endGrp()
-			
+			// to be extending
 		.endWhere()
 		.orderBy("m.code"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
