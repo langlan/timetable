@@ -19,7 +19,9 @@ import com.jytec.cs.dao.WeekRepository;
 import com.jytec.cs.dao.common.Dao;
 import com.jytec.cs.domain.Term;
 import com.jytec.cs.domain.Week;
+import com.jytec.cs.service.api.DateSearchParams;
 import com.jytec.cs.service.api.TermSearchParams;
+import com.jytec.cs.service.api.WeekSearchParams;
 import com.jytec.cs.util.Dates;
 import com.jytec.cs.util.Dates.CalenderWrapper;
 
@@ -98,6 +100,32 @@ public class TermService {
 				.eq("m.termMonth", params.termMonth)
 			.endWhere()
 			.orderBy("m.id"); //@formatter:on
+		return dao.find(ql.toString(), ql.vars());
+	}
+
+	@Transactional
+	public List<Term> search(WeekSearchParams params) {
+		Sql ql = new Sql().select("m").from("Week m").where() //@formatter:off
+				.eq("m.termYear", params.termYear)
+				.eq("m.termMonth", params.termMonth)
+				.eq("m.weekno", params.weekno)
+			.endWhere()
+			.orderBy("m.termYear, m.termMonth, m.weekno"); //@formatter:on
+		return dao.find(ql.toString(), ql.vars());
+	}
+	
+	@Transactional
+	public List<com.jytec.cs.domain.Date> search(DateSearchParams params) {
+		Sql ql = new Sql().select("m").from("Date m").where() //@formatter:off
+				.eq("m.termYear", params.termYear)
+				.eq("m.termMonth", params.termMonth)
+				.eq("m.weekno", params.weekno)
+				.eq("m.dayOfWeek", params.dayOfWeek)
+				.eq("m.holiday", params.holiday)
+				.eq("m.year", params.year)
+				.eq("m.month", params.month)
+			.endWhere()
+			.orderBy("m.date"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 
