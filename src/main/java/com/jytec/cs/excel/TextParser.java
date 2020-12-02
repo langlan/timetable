@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
+import org.springframework.util.Assert;
 
 import com.jytec.cs.domain.Class;
 import com.jytec.cs.domain.Major;
@@ -23,7 +24,7 @@ public interface TextParser {
 	public static String handleMalFormedDegree(String nameWithDegree) {
 		// NOTE: We do not use 【text.replaceAll("(\\[|\\]){2,}", "$1")】,
 		// cause it not support empty name, although no such data example appeared.
-		// Also, I do not want two step procession witch first replace '\[{2,}' then '\]{2,}'
+		// Also, I do not want two step process witch at first replace '\[{2,}' then '\]{2,}'
 		// although it more simple in coding.
 		Matcher m = MALFORMED_DEGREE.matcher(nameWithDegree);
 		boolean result = m.find();
@@ -59,16 +60,23 @@ public interface TextParser {
 		Matcher m = CLASS_NAME_WITH_DEGREE.matcher(classNameWithDegree);
 		m.find();
 		String majorShortName = m.group(1);
-		String year = "20" + m.group(2);
+		String shortYear = m.group(2);
 		String classNo = m.group(3);
 		String degree = m.group(4);
+		Assert.isTrue(shortYear.length() == 2, "format: class-year suppose to be 2 characters.");
+
+		String year = "20" + shortYear;
+		String classNameWithoutDegree = majorShortName + shortYear + "-" + classNo;
+
+		Major major = new Major();
+		major.setShortName(majorShortName + "[" + degree + "]");
+		major.setDegree(degree);
 
 		Class clazz = new Class();
-		Major major = new Major();
 		clazz.setMajor(major);
-		major.setShortName(majorShortName);
-		major.setDegree(degree);
-		clazz.setName(classNameWithDegree.substring(0, classNameWithDegree.indexOf('[')));
+		clazz.setName(handleMalFormedDegree(classNameWithDegree));
+		Assert.isTrue(clazz.getName().equals(classNameWithoutDegree + "[" + degree + "]"),
+				"format: degree handle failed");
 		clazz.setDegree(degree);
 		clazz.setYear(Short.parseShort(year));
 		clazz.setClassNo(Byte.parseByte(classNo));
@@ -92,7 +100,7 @@ public interface TextParser {
 		Matcher m = CLASSES_NAME.matcher(classesRangeText);
 		while (m.find()) {
 			String majorShortName = m.group("major");
-			String year = "20" + m.group("year");
+			String shortYear = m.group("year");
 			int classNoStart = Integer.parseInt(m.group("classno"));
 			String classNoEndStr = m.group("classnoTo");
 			int classNoEnd = classNoEndStr != null ? Integer.parseInt(classNoEndStr) : classNoStart;
@@ -100,16 +108,20 @@ public interface TextParser {
 			if (degree == null) {
 				degree = defaultDegree;
 			}
+			Assert.isTrue(shortYear.length() == 2, "format: class-year suppose to be 2 characters.");
+
+			Major major = new Major();
+			major.setShortName(majorShortName + "[" + degree + "]");
+			major.setDegree(degree);
 
 			for (int classNo = classNoStart; classNo <= classNoEnd; classNo++) {
+				String classNameWithoutDegree = majorShortName + shortYear + "-" + classNo;
+
 				Class clazz = new Class();
-				Major major = new Major();
 				clazz.setMajor(major);
-				major.setShortName(majorShortName);
-				major.setDegree(degree);
-				clazz.setName(majorShortName + year.substring(2) + "-" + classNo);
+				clazz.setName(classNameWithoutDegree + "[" + degree + "]");
 				clazz.setDegree(degree);
-				clazz.setYear(Short.parseShort(year));
+				clazz.setYear(Short.parseShort("20" + shortYear));
 				clazz.setClassNo((byte) classNo);
 				ret.add(clazz);
 			}
@@ -136,7 +148,7 @@ public interface TextParser {
 		// if (shortName) {
 		// major.setShortName(name);
 		// } else {
-		major.setName(name);
+		major.setName(name + "[" + degree + "]");
 		// }
 
 		return major;

@@ -23,19 +23,19 @@ public class ImportExcelTest {
 	// private @Autowired MajorRepository majorRepository;
 
 	@Test
-	public void testImportClassCourses() throws EncryptedDocumentException, IOException {
+	public void testImport00ClassCourses() throws EncryptedDocumentException, IOException {
 		File file = new File("C:/Users/langlan/Desktop/课表/basic-class-course.xls");
 		classCourseImporter.importFile(TermSerivcelTest.TERM, file);
 	}
 
 	@Test
-	public void testImportRooms() throws EncryptedDocumentException, IOException {
+	public void testImport00Rooms() throws EncryptedDocumentException, IOException {
 		File file = new File("C:/Users/langlan/Desktop/课表/basic-rooms.xlsx");
 		roomImporter.importFile(file);
 	}
 
 	@Test
-	public void testImportScheduleOfTheoryCourse() throws EncryptedDocumentException, IOException {
+	public void testImport01ScheduleOfTheoryCourse() throws EncryptedDocumentException, IOException {
 		File file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-1.xlsx");
 		scheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
 		file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-2.xlsx");
@@ -43,7 +43,7 @@ public class ImportExcelTest {
 	}
 	
 	@Test
-	public void testImportScheduleOfTrainingCourse() throws EncryptedDocumentException, IOException {
+	public void testImport02ScheduleOfTrainingCourse() throws EncryptedDocumentException, IOException {
 		File file = new File("C:/Users/langlan/Desktop/课表/schedule-training-1.xlsx");
 		trainingScheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
 		// file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-2.xlsx");

@@ -127,9 +127,9 @@ public class ClassCourseImporter {
 				// majors = StreamSupport.stream(majorRepository.findAll().spliterator(), false).collect(
 				// Collectors.toMap(major -> major.getName() + "[" + major.getDegree() + "]", major -> major));
 				majorRepository.findAll()
-						.forEach(major -> majors.put(major.getName() + "[" + major.getDegree() + "]", major));
+						.forEach(major -> majors.put(major.getName() /* +"[" + major.getDegree() + "]" */, major));
 				classRepository.findAll()
-						.forEach(clas -> classes.put(clas.getName() + "[" + clas.getDegree() + "]", clas));
+						.forEach(clas -> classes.put(clas.getName() /* + "[" + clas.getDegree() + "]" */, clas));
 			}
 
 			// find or create department.

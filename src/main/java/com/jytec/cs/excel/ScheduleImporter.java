@@ -126,10 +126,12 @@ public class ScheduleImporter {
 			totalRow++;
 			// parse class
 			String classNameWithDegree = TextParser.handleMalFormedDegree(cellString(cell));
-			if (classNameWithDegree.isEmpty())
+			if (classNameWithDegree.isEmpty()) {
+				log.info("忽略无效数据行：班级列为空" + atLocaton(row));
 				continue;
+			}
 			if (!classNameWithDegree.contains(classYearFilter)) {
-				log.info("忽略班级：【" + classNameWithDegree + "】" + atLocaton(row));
+				log.info("忽略班级（非指定年级）：【" + classNameWithDegree + "】" + atLocaton(row));
 				continue;
 			}
 
@@ -144,7 +146,7 @@ public class ScheduleImporter {
 			// 3.1 优点：适合【测试场景】、【全量重导需求（排课功能脱离或表表隔离）】
 			if (scheduleRespository.countNonTrainingByClassAndTerm(pc.getName(), pc.getDegree(), term.getTermYear(),
 					term.getTermMonth()) > 0) {
-				log.info("忽略班级（已有非实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(row));
+				log.info("忽略班级（已有理论课排课记录）：【" + classNameWithDegree + "】" + atLocaton(row));
 				continue;
 			}
 

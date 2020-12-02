@@ -134,7 +134,7 @@ public class TrainingScheduleImporter {
 		for (int rowIndex = dataFirstRowIndex; rowIndex < sheet.getLastRowNum(); rowIndex++) {
 			Row row = sheet.getRow(rowIndex);
 			Cell classCell = MergingAreas.getCellWithMerges(sheet, rowIndex, titleInfo.classColIndex);
-			Cell weekRangeCell = row.getCell(titleInfo.weeknoColIndex);
+			Cell weekRangeCell = MergingAreas.getCellWithMerges(sheet, rowIndex, titleInfo.weeknoColIndex);
 			boolean rowImported = false;
 
 			// parse weekno-range
@@ -142,7 +142,7 @@ public class TrainingScheduleImporter {
 			// parse class
 			String classesName = TextParser.handleMalFormedDegree(cellString(classCell));
 			if (classesName.isEmpty() || weekRange == null) {
-				log.info("忽略无效数据行：班级列【" + classesName + "】周数列【" + cellString(weekRangeCell) + "】" + atLocaton(row));
+				log.info("忽略无效数据行：班级列为空，周数列【" + cellString(weekRangeCell) + "】" + atLocaton(row));
 				continue;
 			}
 
@@ -151,7 +151,7 @@ public class TrainingScheduleImporter {
 
 			Class[] pcs = TextParser.parseClasses(classesName, defaultDegree);
 			for (Class pc : pcs) {
-				String classNameWithDegree = pc.getName() + "[" + pc.getDegree() + "]";
+				String classNameWithDegree = pc.getName() /* + "[" + pc.getDegree() + "]" */;
 
 				if (!classNameWithDegree.contains(classYearFilter)) {
 					log.info("忽略班级（非指定年级）：【" + classesName + "】" + atLocaton(row));
@@ -231,13 +231,13 @@ public class TrainingScheduleImporter {
 
 	class ModelMappingHelper {
 		final Term term;
-		Map<String, ClassCourse> indexed;
+		Map<String, ClassCourse> classCoursesIndexedByName;
 
 		public ModelMappingHelper(Term term) {
 			this.term = term;
 			List<Object[]> all = classCourseRepository.findAllWithKeyByTerm(term.getTermYear(), term.getTermMonth());
-			indexed = all.stream().collect(Collectors.toMap(it -> it[0].toString(), it -> (ClassCourse) it[1]));
-			if (all.size() != indexed.size())
+			classCoursesIndexedByName = all.stream().collect(Collectors.toMap(it -> it[0].toString(), it -> (ClassCourse) it[1]));
+			if (all.size() != classCoursesIndexedByName.size())
 				throw new IllegalStateException("发现现存【班级选课表】中存在重复数据！");
 		}
 
@@ -277,7 +277,7 @@ public class TrainingScheduleImporter {
 
 		public ClassCourse findClassCourse(String classNameWithDegree, String course, Cell cell) {
 			String classCourseKey = classNameWithDegree + "-" + course;
-			ClassCourse classCourse = indexed.get(classCourseKey);
+			ClassCourse classCourse = classCoursesIndexedByName.get(classCourseKey);
 
 			if (classCourse == null) {
 				throw new IllegalStateException("无法找到【班级选课】记录：" + classCourseKey + atLocaton(cell));
