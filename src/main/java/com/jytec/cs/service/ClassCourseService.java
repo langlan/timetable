@@ -31,6 +31,7 @@ public class ClassCourseService extends CommonService{
 			.eq("m.degree", params.degree)
 			.eq("m.name", params.name)
 //			.eq("m.idc", params.idc)
+			.eq("m.year", params.year)
 		.endWhere()
 		.orderBy("m.major.id, m.name"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
