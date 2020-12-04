@@ -165,7 +165,7 @@ public interface TextParser {
 	public static int parseInt(String text) {
 		Matcher m = INTTEGER.matcher(text);
 		if (m.find()) {
-			Integer.parseInt(m.group());
+			return Integer.parseInt(m.group());
 		}
 		return 0;
 	}
