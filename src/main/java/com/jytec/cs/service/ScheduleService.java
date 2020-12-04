@@ -42,6 +42,8 @@ public class ScheduleService extends ModelService<Schedule> {
 			.eq("m.course.code", params.courseCode)
 			.eq("m.teacher.id", params.teacherId)
 			.eq("m.site.id", params.siteId)
+			.eq("m.theClass.major.id", params.majorId)
+			.eq("m.theClass.major.dept.id", params.deptId)
 		;//@formatter:on
 	}
 
