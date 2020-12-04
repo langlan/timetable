@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Entity
-public class Major { // 专业
+public class Major extends BaseModel<Integer>{ // 专业
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
