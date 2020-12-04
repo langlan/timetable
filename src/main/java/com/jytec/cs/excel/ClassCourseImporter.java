@@ -156,6 +156,7 @@ public class ClassCourseImporter {
 			} else {
 				pclass.setMajor(major);
 			}
+			pclass.setDeptId(dept.getId());
 
 			if (theClass == null) {
 				theClass = pclass;

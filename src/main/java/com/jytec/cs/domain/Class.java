@@ -25,12 +25,22 @@ public class Class extends BaseModel<Long> {
 	@JsonSerialize(using = ModelPropAsIdSerializer.class)
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Major major;
+	private Integer deptId;
 	private String name;
 	private String degree; // Major#degree
 	private short year; // 入学年
 	private byte classNo; // 班级号
 	private int size; // 学生人数
 	private Integer idc;
+
+// Handle it when importing data.
+//	@PreUpdate
+//	@PrePersist
+//	public void handleDeptId() {
+//		if (this.deptId == null) {
+//			this.deptId = this.major.getDept().getId();
+//		}
+//	}
 
 	public long getId() {
 		return id;
@@ -46,6 +56,14 @@ public class Class extends BaseModel<Long> {
 
 	public void setMajor(Major major) {
 		this.major = major;
+	}
+
+	public Integer getDeptId() {
+		return deptId;
+	}
+
+	public void setDeptId(Integer deptId) {
+		this.deptId = deptId;
 	}
 
 	public String getName() {
