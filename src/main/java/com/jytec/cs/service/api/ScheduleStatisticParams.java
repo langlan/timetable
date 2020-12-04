@@ -17,6 +17,7 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 		allowedGroupByProps.put("teacherId", "teacher.id");
 		allowedGroupByProps.put("majorId", "theClass.major.id");
 		allowedGroupByProps.put("deptId", "theClass.deptId");
+		allowedGroupByProps.put("classYear", "theClass.year");
 
 	}
 
