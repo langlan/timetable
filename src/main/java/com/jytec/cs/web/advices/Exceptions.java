@@ -28,6 +28,13 @@ public class Exceptions {
 		return prepareResponse(e);
 	}
 
+	@ExceptionHandler
+	public @ResponseBody Map<String, Object> handleGlobal(Exception e, HttpServletResponse response) {
+		// TODO: check if custom error-code.
+		response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+		return prepareResponse(e);
+	}
+
 	private Map<String, Object> prepareResponse(Exception e) {
 		Map<String, Object> ret = new HashMap<>();
 		ret.put("msg", e.getMessage());

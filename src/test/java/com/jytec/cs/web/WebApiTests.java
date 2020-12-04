@@ -70,4 +70,11 @@ public class WebApiTests {
 	}
 	
 	// /dates? : weekno, dayOfWeek, holiday, date, year, month
+	
+	@Test
+	public void deptsTest() throws Exception {
+		mockMvc.perform(get("/depts")).andDo(print()) 
+				.andExpect(status().isOk()) //
+				.andExpect(jsonPath("$[9].name").exists());
+	} 
 }
