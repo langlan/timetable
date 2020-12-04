@@ -76,5 +76,23 @@ public class WebApiTests {
 		mockMvc.perform(get("/depts")).andDo(print()) 
 				.andExpect(status().isOk()) //
 				.andExpect(jsonPath("$[9].name").exists());
+	}
+	
+	@Test
+	public void majorsTest() throws Exception {
+		mockMvc.perform(get("/majors")).andDo(print()) 
+		.andExpect(status().isOk()) //
+		.andExpect(jsonPath("$[9].name").exists());
+	}
+	
+	@Test
+	public void classesTest() throws Exception {
+		mockMvc.perform(get("/classes")).andDo(print()) 
+		.andExpect(status().isOk()) //
+		.andExpect(jsonPath("$.length()").value(greaterThan(100)));
+		mockMvc.perform(get("/classes?majorId=2")).andDo(print()) 
+		.andExpect(status().isOk()) //
+		.andExpect(jsonPath("$.length()").value(lessThan(30)))
+		.andExpect(jsonPath("$[0].majorId").value(2));
 	} 
 }

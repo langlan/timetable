@@ -43,9 +43,15 @@ public class ClassCourseService extends CommonService{
 				.like("m.name", params.q, true, true)
 				.like("m.cate", params.q, true, true)
 				.like("m.style", params.q, true, true)
-				.like("m.method", params.q, true, true)
+				.like("m.examineMethod", params.q, true, true)
 			.endGrp()
-			// to be extending
+			.eq("m.code", params.code)
+			.eq("m.name", params.name)
+			.eq("m.cate", params.cate)
+			.eq("m.style", params.style)
+			.eq("m.examineMethod", params.examineMethod)
+			.eq("m.labByTheory", params.labByTheory)
+			.eq("m.locationType", params.locationType)
 		.endWhere()
 		.orderBy("m.code"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
