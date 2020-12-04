@@ -24,5 +24,5 @@ public interface Dao {
 
 	List<Map<String, Object>> findMaps(String string, Object... vars);
 
-	// <T> T save(T d);
+	<T> T save(T d);
 }

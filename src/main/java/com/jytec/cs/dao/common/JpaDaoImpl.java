@@ -1,20 +1,24 @@
 package com.jytec.cs.dao.common;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
-import org.apache.poi.ss.formula.functions.T;
+import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.transform.AliasToEntityMapResultTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.support.JpaEntityInformation;
+import org.springframework.data.jpa.repository.support.JpaEntityInformationSupport;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JpaDaoImpl implements Dao {
 	private @Autowired EntityManager em;
+	private Map<Class<?>, JpaEntityInformation<?, ?>> entityInfos = new HashMap<>();
 
 	@Override
 	public <T> List<T> find(String ql, Object... vars) {
@@ -73,4 +77,42 @@ public class JpaDaoImpl implements Dao {
 		return em.find(clazz, id);
 	}
 
+	@Override
+	public <T> T save(T model) {
+		if (isNew(model)) {
+			em.persist(model);
+			return model;
+		} else {
+			return em.merge(model);
+		}
+	}
+
+	private <T> boolean isNew(T model) {
+		if(model instanceof HibernateProxy) { // or test if managed-type by meta-model.
+			return false;
+		}
+		return getEntityInfo(model).isNew(model);
+	}
+
+	// check-new only, for other uses, need do more work about proxy.
+	<T> JpaEntityInformation<T, ?> getEntityInfo(T model) {
+		@SuppressWarnings("unchecked")
+		Class<T> clazz = (Class<T>) model.getClass();
+		
+		// Since we only use it for check-is-new. so no need to...
+//		if(model instanceof HibernateProxy) {
+//			@SuppressWarnings("unchecked")
+//			Class<T> entityClass = ((HibernateProxy) model).getHibernateLazyInitializer().getPersistentClass();
+//			clazz = entityClass;
+//		}
+		
+		@SuppressWarnings("unchecked")
+		JpaEntityInformation<T, ?> entityInfo = (JpaEntityInformation<T, ?>) entityInfos.get(clazz);
+		if (entityInfo == null) {
+			entityInfo = JpaEntityInformationSupport.getEntityInformation(clazz, em);
+			entityInfos.put(clazz, entityInfo);
+		}
+		return entityInfo;
+
+	}
 }

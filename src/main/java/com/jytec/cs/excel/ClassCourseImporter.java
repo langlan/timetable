@@ -37,6 +37,7 @@ import com.jytec.cs.domain.Dept;
 import com.jytec.cs.domain.Major;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
+import com.jytec.cs.service.AuthService;
 import com.jytec.cs.service.AutoCreateService;
 
 @Service
@@ -49,6 +50,7 @@ public class ClassCourseImporter {
 	private @Autowired CourseRepository courseRepository;
 	private @Autowired ClassCourseRepository classCourseRepository;
 	private @Autowired AutoCreateService autoCreateService;
+	private @Autowired AuthService authService;
 
 	@Transactional
 	public void importFile(Term term, File file) throws EncryptedDocumentException, IOException {
@@ -197,6 +199,7 @@ public class ClassCourseImporter {
 			count++;
 		}
 		otherTeacherNames.forEach(it -> autoCreateService.findTeacherByNameOrCreateWithAutoCode(it));
+		authService.assignIdcs();
 		log.info("导入班级选课记录共【" + count + "/" + sheet.getLastRowNum() + "】");
 	}
 
