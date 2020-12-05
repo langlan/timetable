@@ -22,6 +22,8 @@ public class ScheduleSearchParams extends TermSearchParams {
 
 	// the-class-join
 	public Short classYear;
+	// course-join
+	public String courseCate;
 
 	public Map<String, Object> getMapOfNonEmpty() {
 		Field[] fields = getClass().getFields();// all public
@@ -98,6 +100,9 @@ public class ScheduleSearchParams extends TermSearchParams {
 	public void setClassYear(Short classYear) {
 		this.classYear = classYear;
 	}
-	
+
+	public void setCourseCate(String courseCate) {
+		this.courseCate = courseCate;
+	}
 	
 }

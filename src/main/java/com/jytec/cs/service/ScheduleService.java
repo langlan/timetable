@@ -48,6 +48,7 @@ public class ScheduleService extends ModelService<Schedule> {
 			.eq("m.theClass.major.dept.id", params.deptId)
 			// join-fields
 			.eq("m.theClass.year", params.classYear)
+			.eq("m.course.cate", params.courseCate)
 		;//@formatter:on
 	}
 
