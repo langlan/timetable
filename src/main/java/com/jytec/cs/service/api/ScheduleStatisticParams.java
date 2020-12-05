@@ -23,6 +23,12 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 
 	private String aggFields; // aggregate group name
 	private String groupBy;
+	/** sum(timeEnd-timeStart+1) as lessonTime */
+	public boolean aggLessonTime;
+	/** sum(timeEnd-timeStart+1)/2 as lessonCount */
+	public boolean aggLessonCount;
+	/** count(*) as recordCount */
+	public boolean aggRecordCount;
 
 	public String getGroupBy() {
 		return groupBy;
@@ -40,25 +46,31 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 		this.aggFields = aggFields;
 	}
 
-	/** sum(timeEnd-timeStart+1) as lessonTime */
-	public boolean aggLessonTime;
-	/** sum(timeEnd-timeStart+1)/2 as lessonCount */
-	public boolean aggLessonCount;
-	/** count(*) as recordCount */
-	public boolean aggRecordCount;
-
 	public ScheduleStatisticParams prepareAggFields() {
+		boolean any = false;
 		if (aggFields != null) {
-			switch (aggFields) {
-			case "recordCount":
-				return aggRecordCount();
-			case "lessonTime":
-				return aggLessonTime();
-			case "lessonCount":
-				return aggLessonCount();
+			for (String aggField : aggFields.split(",")) {
+				boolean iany = true;
+				switch (aggField.trim()) {
+				case "recordCount":
+					aggRecordCount();
+					break;
+				case "lessonTime":
+					aggLessonTime();
+					break;
+				case "lessonCount":
+					aggLessonCount();
+					break;
+				default:
+					iany = false;
+				}
+				any = any || iany;
 			}
 		}
-		return aggRecordCount().aggLessonCount();
+		if (!any) { // default: recordCount, lessonCount
+			aggRecordCount().aggLessonCount();
+		}
+		return this;
 	}
 
 	public ScheduleStatisticParams aggRecordCount() {
@@ -90,7 +102,7 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 			StringBuilder sb = new StringBuilder();
 			String[] props = groupBy.split(",");
 			for (String prop : props) {
-				String realProp = allowedGroupByProps.get(prop);
+				String realProp = allowedGroupByProps.get(prop.trim());
 				if (realProp != null) {
 					if (sb.length() > 0) {
 						sb.append(",");
@@ -98,7 +110,7 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 					sb.append(rootAlias);
 					sb.append(".");
 					sb.append(realProp);
-					if(selectAlias) {
+					if (selectAlias) { // else for group-by clause.
 						sb.append(" as ");
 						sb.append(prop);
 					}
