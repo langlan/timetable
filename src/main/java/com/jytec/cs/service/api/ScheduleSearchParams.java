@@ -15,10 +15,11 @@ public class ScheduleSearchParams extends TermSearchParams {
 	public String courseCode;
 	public Integer siteId, majorId, deptId;
 	public String trainingType;
+	public String[] trainingTypes;
 
 	// special
 	public String yearMonth;
-	public byte lesson; //for test if lesson*2 between timeStart And End.
+	public byte lesson; // for test if lesson*2 between timeStart And End.
 
 	// the-class-join
 	public Short classYear;
@@ -86,15 +87,19 @@ public class ScheduleSearchParams extends TermSearchParams {
 	}
 
 	public void setTrainingType(String trainingType) {
-		this.trainingType = trainingType;
+		if (trainingType != null && trainingType.contains(",")) {
+			this.trainingTypes =  trainingType.split("\\s*,\\s*");
+		}else {
+			this.trainingType = trainingType;	
+		}
 	}
 
 	public void setYearMonth(String yearMonth) {
 		this.yearMonth = yearMonth;
 	}
-	
+
 	public void setLesson(byte lesson) {
-		this.lesson = (byte) (lesson*2);
+		this.lesson = (byte) (lesson * 2);
 	}
 
 	public void setClassYear(Short classYear) {
@@ -104,5 +109,5 @@ public class ScheduleSearchParams extends TermSearchParams {
 	public void setCourseCate(String courseCate) {
 		this.courseCate = courseCate;
 	}
-	
+
 }

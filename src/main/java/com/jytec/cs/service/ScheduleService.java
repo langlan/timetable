@@ -35,6 +35,7 @@ public class ScheduleService extends ModelService<Schedule> {
 			.eq("m.timeStart", params.timeStart)
 			.eq("m.timeEnd", params.timeEnd)
 			.eq("m.trainingType", params.trainingType)
+			.in("m.trainingType", params.trainingTypes)
 			.eq("m.date", params.date)
 			// special
 			.like("m.date", params.yearMonth, false, true)
