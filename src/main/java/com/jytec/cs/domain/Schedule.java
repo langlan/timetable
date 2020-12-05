@@ -7,21 +7,21 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Table(uniqueConstraints = {
-		// @UniqueConstraint(columnNames = { "the_class_id", "course_id", "termYear", "termMonth", "weekno",
-		// "dayOfWeek", "timeStart", "timeEnd" })
-})
+		@UniqueConstraint(columnNames = { "the_class_id", "course_code", "termYear", "termMonth", "weekno", //
+				"dayOfWeek", "timeStart", "timeEnd" }) })
 @Entity
-public class Schedule extends BaseModel<Long>{
+public class Schedule extends BaseModel<Long> {
 	public static final String TRAININGTYPE_NON = "N";
 	public static final String TRAININGTYPE_SCHOOL = "S";
 	public static final String TRAININGTYPE_ENTERPRISE = "E";
-	
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;

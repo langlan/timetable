@@ -15,7 +15,8 @@ import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Entity
 @Table(uniqueConstraints = { //
-		@UniqueConstraint(columnNames = { "major_id", "year", "classNo" }) //
+		@UniqueConstraint(columnNames = { "major_id", "year", "classNo" }), //
+		@UniqueConstraint(columnNames = { "name" }) //
 })
 public class Class extends BaseModel<Long> {
 	@Id

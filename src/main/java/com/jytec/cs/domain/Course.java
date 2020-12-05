@@ -2,7 +2,12 @@ package com.jytec.cs.domain;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
+@Table(uniqueConstraints = { //
+		@UniqueConstraint(columnNames = { "code" }) //
+})
 @Entity
 public class Course extends BaseModel<String>{
 	@Id

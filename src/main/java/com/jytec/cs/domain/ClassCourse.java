@@ -6,13 +6,18 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
+@Table(uniqueConstraints = { //
+		@UniqueConstraint(columnNames = { "termYear", "termMonth", "the_class_id", "course_code" }) //
+})
 @Entity
-public class ClassCourse extends BaseModel<Long>{
+public class ClassCourse extends BaseModel<Long> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
@@ -55,11 +60,11 @@ public class ClassCourse extends BaseModel<Long>{
 	public void setTermMonth(byte termMonth) {
 		this.termMonth = termMonth;
 	}
-	
+
 	public Class getTheClass() {
 		return theClass;
 	}
-	
+
 	public void setTheClass(Class theClass) {
 		this.theClass = theClass;
 	}
