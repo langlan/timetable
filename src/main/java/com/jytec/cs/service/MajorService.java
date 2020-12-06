@@ -25,7 +25,7 @@ public class MajorService extends ModelService<Major> {
 			.eq("m.dept.id", params.deptId)
 			.eq("m.degree", params.degree)
 		.endWhere()
-		.orderBy("m.dept.id"); //@formatter:on
+		.orderBy("m.name"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 }

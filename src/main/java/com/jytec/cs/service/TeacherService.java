@@ -34,7 +34,7 @@ public class TeacherService extends ModelService<Teacher>{
 			.eq("m.mail", params.mail)
 			.eq("m.female", params.female)
 		.endWhere()
-		.orderBy("m.code")
+		.orderBy("m.name")
 		; //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}

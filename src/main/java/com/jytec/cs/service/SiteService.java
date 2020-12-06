@@ -25,7 +25,7 @@ public class SiteService extends ModelService<Site> {
 			.endGrp()
 			//
 		.endWhere()
-		.orderBy("m.dept.id, m.code"); //@formatter:on
+		.orderBy("m.name"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 }
