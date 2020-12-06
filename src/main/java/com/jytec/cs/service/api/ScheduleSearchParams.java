@@ -19,7 +19,7 @@ public class ScheduleSearchParams extends TermSearchParams {
 
 	// special
 	public String yearMonth;
-	public byte lesson; // for test if lesson*2 between timeStart And End.
+	public Byte lesson; // for test if lesson*2 between timeStart And End.
 
 	// the-class-join
 	public Short classYear;
@@ -98,7 +98,7 @@ public class ScheduleSearchParams extends TermSearchParams {
 		this.yearMonth = yearMonth;
 	}
 
-	public void setLesson(byte lesson) {
+	public void setLesson(Byte lesson) {
 		this.lesson = (byte) (lesson * 2);
 	}
 

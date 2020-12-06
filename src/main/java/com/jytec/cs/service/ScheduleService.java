@@ -13,6 +13,7 @@ import com.jytec.cs.service.api.ScheduleStatisticParams;
 
 import langlan.sql.weaver.Sql;
 import langlan.sql.weaver.f.WhereFragment;
+import langlan.sql.weaver.u.Variables;
 
 @Service
 public class ScheduleService extends ModelService<Schedule> {
@@ -39,7 +40,7 @@ public class ScheduleService extends ModelService<Schedule> {
 			.eq("m.date", params.date)
 			// special
 			.like("m.date", params.yearMonth, false, true)
-			.__("? Between m.timeStart And m.timeEnd", params.lesson)
+			.__("? Between m.timeStart And m.timeEnd", params.lesson)    .$(Variables.isNotEmpty(params.lesson))
 			// model-id
 			.eq("m.theClass.id", params.classId)
 			.eq("m.course.code", params.courseCode)
