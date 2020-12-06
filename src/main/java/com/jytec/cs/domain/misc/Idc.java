@@ -1,9 +1,11 @@
 package com.jytec.cs.domain.misc;
 
-import javax.persistence.Entity;
 import javax.persistence.Id;
 
-@Entity
+/**
+ * @deprecated not necessary to use a table. 
+ */
+//@Entity
 public class Idc {
 	public static final int IDC_MIN_VALUE = 1000000;
 	public static final int IDC_MAX_VALUE = 9999999;
