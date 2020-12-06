@@ -16,18 +16,19 @@
 
 package com.jytec.cs.web;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -95,4 +96,13 @@ public class WebApiTests {
 		.andExpect(jsonPath("$.length()").value(lessThan(30)))
 		.andExpect(jsonPath("$[0].majorId").value(2));
 	} 
+	
+	@Test
+	public void sitesTest() throws Exception {
+		mockMvc.perform(get("/sites/1")).andExpect(status().isOk()) //
+		.andExpect(jsonPath("$.id").value(1));
+		mockMvc.perform(get("/sites/code/90194")).andExpect(status().isOk()) //
+		.andExpect(jsonPath("$.code").value("90194"))
+		.andExpect(jsonPath("$.name").value("信息223A"));
+	}
 }

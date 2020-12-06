@@ -18,5 +18,7 @@ public interface SiteRepository extends PagingAndSortingRepository<Site, Long> {
 
 	@Query("Select r From Site r Where r.name=?1")
 	Optional<Site> findUniqueByName(String name);
+	
+	Optional<Site> findByCode(String code);
 
 }
