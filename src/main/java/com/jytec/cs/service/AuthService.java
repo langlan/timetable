@@ -37,7 +37,7 @@ public class AuthService extends CommonService {
 		Assert.isTrue(index == idcs.size(), "Wrong arithmetic.");
 
 		List<Class> classes = dao.find("Select c From Class c Where c.idc is Null");
-		idcs = generateIdcs(teachers.size(), Class.class);
+		idcs = generateIdcs(classes.size(), Class.class);
 		index = 0;
 		for (Class theClass : classes) {
 			theClass.setIdc(idcs.get(index++));
