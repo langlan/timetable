@@ -14,7 +14,7 @@ import com.jytec.cs.service.SiteService;
 import com.jytec.cs.service.api.SiteSearchParams;
 
 @RestController
-@RequestMapping("/sites")
+@RequestMapping("/api/sites")
 public class SiteController extends AbstractModelController<Site, Integer>{
 	private @Autowired SiteService siteService;
 	private @Autowired SiteRepository siteRepository;

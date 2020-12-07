@@ -13,7 +13,7 @@ import com.jytec.cs.service.TermService;
 import com.jytec.cs.service.api.WeekSearchParams;
 
 @RestController
-@RequestMapping("/weeks")
+@RequestMapping("/api/weeks")
 public class WeekController extends AbstractModelController<Week, String> {
 	private @Autowired TermService termService;
 

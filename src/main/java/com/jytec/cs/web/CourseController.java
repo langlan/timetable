@@ -13,7 +13,7 @@ import com.jytec.cs.service.ClassCourseService;
 import com.jytec.cs.service.api.CourseSearchParams;
 
 @RestController
-@RequestMapping("/courses")
+@RequestMapping("/api/courses")
 public class CourseController extends AbstractModelController<Major, String>{
 	private @Autowired ClassCourseService classCourseService;
 

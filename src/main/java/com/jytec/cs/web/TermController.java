@@ -12,7 +12,7 @@ import com.jytec.cs.service.TermService;
 import com.jytec.cs.service.api.TermSearchParams;
 
 @RestController
-@RequestMapping("/terms")
+@RequestMapping("/api/terms")
 public class TermController extends AbstractModelController<Term, String> {
 	private @Autowired TermService termService;
 

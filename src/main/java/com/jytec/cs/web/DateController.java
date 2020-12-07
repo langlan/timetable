@@ -12,7 +12,7 @@ import com.jytec.cs.service.TermService;
 import com.jytec.cs.service.api.DateSearchParams;
 
 @RestController
-@RequestMapping("/dates")
+@RequestMapping("/api/dates")
 public class DateController extends AbstractModelController<Date, String> {
 	private @Autowired TermService termService;
 

@@ -20,7 +20,7 @@ import com.jytec.cs.service.api.ScheduleStatisticParams;
 public class ScheduleController {
 	private @Autowired ScheduleService scheduleService;
 
-	@GetMapping("/schedules")
+	@GetMapping("/api/schedules")
 	public List<Schedule> search(ScheduleSearchParams params, Map<?, ?> mparams) {
 		if (mparams.isEmpty() || params.getMapOfNonEmpty().isEmpty()) {
 			return Collections.emptyList();

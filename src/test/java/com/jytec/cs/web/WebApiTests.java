@@ -43,26 +43,26 @@ public class WebApiTests {
 
 	@Test
 	public void termsTest() throws Exception {
-		mockMvc.perform(get("/terms")).andDo(print()) //
+		mockMvc.perform(get("/api/terms")).andDo(print()) //
 				.andExpect(status().isOk()) //
 				.andExpect(jsonPath("$[0].id").exists());
-		mockMvc.perform(get("/terms?termId=202009")).andDo(print()) //
+		mockMvc.perform(get("/api/terms?termId=202009")).andDo(print()) //
 				.andExpect(status().isOk()) //
 				.andExpect(jsonPath("$[0].id").value("202009"));
-		mockMvc.perform(get("/terms?term=209909")) //
+		mockMvc.perform(get("/api/terms?term=209909")) //
 				.andExpect(status().isOk()) //
 				.andExpect(content().json("[]"));
 
-		mockMvc.perform(get("/terms/202009")) //
+		mockMvc.perform(get("/api/terms/202009")) //
 				.andExpect(jsonPath("$.id").value("202009"));
 	}
 
 	@Test
 	public void weeksTest() throws Exception {
-		mockMvc.perform(get("/weeks?termId=202009")).andDo(print()) //
+		mockMvc.perform(get("/api/weeks?termId=202009")).andDo(print()) //
 				.andExpect(status().isOk()) //
 				.andExpect(jsonPath("$[0].firstDay").value("2020-09-07"));
-		mockMvc.perform(get("/weeks?term=202009&weekno=1")) //
+		mockMvc.perform(get("/api/weeks?term=202009&weekno=1")) //
 				.andExpect(status().isOk()) //
 				.andExpect(jsonPath("$[0].termId").value("202009"))//
 				.andExpect(jsonPath("$[0].weekno").value(1)) //
@@ -73,24 +73,24 @@ public class WebApiTests {
 	
 	@Test
 	public void deptsTest() throws Exception {
-		mockMvc.perform(get("/depts")).andDo(print()) 
+		mockMvc.perform(get("/api/depts")).andDo(print()) 
 				.andExpect(status().isOk()) //
 				.andExpect(jsonPath("$[9].name").exists());
 	}
 	
 	@Test
 	public void majorsTest() throws Exception {
-		mockMvc.perform(get("/majors")).andDo(print()) 
+		mockMvc.perform(get("/api/majors")).andDo(print()) 
 		.andExpect(status().isOk()) //
 		.andExpect(jsonPath("$[9].name").exists());
 	}
 	
 	@Test
 	public void classesTest() throws Exception {
-		mockMvc.perform(get("/classes")).andDo(print()) 
+		mockMvc.perform(get("/api/classes")).andDo(print()) 
 		.andExpect(status().isOk()) //
 		.andExpect(jsonPath("$.length()").value(greaterThan(100)));
-		mockMvc.perform(get("/classes?majorId=2")).andDo(print()) 
+		mockMvc.perform(get("/api/classes?majorId=2")).andDo(print()) 
 		.andExpect(status().isOk()) //
 		.andExpect(jsonPath("$.length()").value(lessThan(30)))
 		.andExpect(jsonPath("$[0].majorId").value(2));
@@ -98,9 +98,9 @@ public class WebApiTests {
 	
 	@Test
 	public void sitesTest() throws Exception {
-		mockMvc.perform(get("/sites/1")).andExpect(status().isOk()) //
+		mockMvc.perform(get("/api/sites/1")).andExpect(status().isOk()) //
 		.andExpect(jsonPath("$.id").value(1));
-		mockMvc.perform(get("/sites/code/90194")).andExpect(status().isOk()) //
+		mockMvc.perform(get("/api/sites/code/90194")).andExpect(status().isOk()) //
 		.andExpect(jsonPath("$.code").value("90194"))
 		.andExpect(jsonPath("$.name").value("信息223A"));
 	}
