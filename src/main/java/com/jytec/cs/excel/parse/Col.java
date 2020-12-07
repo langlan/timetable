@@ -7,7 +7,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
 public class Col<V, CONTEXT> {
-	private boolean optional;
+	private boolean optional, withMerges;
 	private String headerPattern;
 	private Function<Cell, V> converter; // convert cell to V value before it being consuming with context.
 	private BiConsumer<V, CONTEXT> cellConsumer;
@@ -29,8 +29,17 @@ public class Col<V, CONTEXT> {
 		return this;
 	}
 
+	public Col<V, CONTEXT> withMerges() {
+		this.withMerges = true;
+		return this;
+	}
+
 	public boolean isOptional() {
 		return optional;
+	}
+
+	public boolean isWithMerges() {
+		return withMerges;
 	}
 
 	public String getHeaderPattern() {
@@ -56,12 +65,13 @@ public class Col<V, CONTEXT> {
 	 */
 	BiConsumer<Row, CONTEXT> buildRowProcessor(int colNum) {
 		Positional pos = Positional.fixed(colNum);
+		CellPicker<Cell> cellPicker = (withMerges ? pos.asCellPicker() : pos.asCellPickerWithMerges());
 		if (converter != null) {
-			return pos.asCellPicker(converter).link(cellConsumer);
+			return cellPicker.withConverter(converter).link(cellConsumer);
 		} else {
 			@SuppressWarnings("unchecked")
 			BiConsumer<Cell, CONTEXT> _c = (BiConsumer<Cell, CONTEXT>) cellConsumer;
-			return pos.asCellPicker().link(_c);
+			return cellPicker.link(_c);
 		}
 	}
 

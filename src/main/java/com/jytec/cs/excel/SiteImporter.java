@@ -44,7 +44,7 @@ public class SiteImporter {
 		cols.scol("教室类别", (it, m) -> m.setRoomType(it));
 		cols.scol("最终调换", (it, m) -> m.setDept(new Dept(it)));
 		cols.scol("多媒体改造", (it, m) -> m.setMultimedia(it));
-		cols.scol("校内实训基地名称", (it, m) -> m.setName4Training(it)).optional();
+		cols.scol("校内实训基地名称", (it, m) -> m.setName4Training(it)).optional().withMerges();
 	}
 
 	@Transactional

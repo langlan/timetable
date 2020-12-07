@@ -1,6 +1,7 @@
 package com.jytec.cs.excel.parse;
 
 import static com.jytec.cs.excel.parse.Texts.cellString;
+import static org.apache.poi.ss.usermodel.CellType.BLANK;
 
 import java.util.function.Function;
 
@@ -20,6 +21,17 @@ public interface Positional {
 	/** return a function witch get a cell from row by the {@link #getPosition()} */
 	default CellPicker<Cell> asCellPicker() {
 		return row -> row.getCell(getPosition());
+	}
+
+	/** return a function witch get a cell from row by the {@link #getPosition()} */
+	default CellPicker<Cell> asCellPickerWithMerges() {
+		return row -> {
+			Cell cell = row.getCell(getPosition());
+			if (cell == null || cell.getCellType() == BLANK) {
+				return MergingAreas.getCell(row.getSheet(), row.getRowNum(), getPosition());
+			}
+			return cell;
+		};
 	}
 
 	/**
