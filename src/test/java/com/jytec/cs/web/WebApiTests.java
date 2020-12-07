@@ -46,7 +46,7 @@ public class WebApiTests {
 		mockMvc.perform(get("/terms")).andDo(print()) //
 				.andExpect(status().isOk()) //
 				.andExpect(jsonPath("$[0].id").exists());
-		mockMvc.perform(get("/terms?termYear=2020&termMonth=09")).andDo(print()) //
+		mockMvc.perform(get("/terms?termId=202009")).andDo(print()) //
 				.andExpect(status().isOk()) //
 				.andExpect(jsonPath("$[0].id").value("202009"));
 		mockMvc.perform(get("/terms?term=209909")) //
@@ -59,13 +59,12 @@ public class WebApiTests {
 
 	@Test
 	public void weeksTest() throws Exception {
-		mockMvc.perform(get("/weeks?termYear=2020&termMonth=09")).andDo(print()) //
+		mockMvc.perform(get("/weeks?termId=202009")).andDo(print()) //
 				.andExpect(status().isOk()) //
 				.andExpect(jsonPath("$[0].firstDay").value("2020-09-07"));
 		mockMvc.perform(get("/weeks?term=202009&weekno=1")) //
 				.andExpect(status().isOk()) //
-				.andExpect(jsonPath("$[0].termYear").value(2020))//
-				.andExpect(jsonPath("$[0].termMonth").value(9)) //
+				.andExpect(jsonPath("$[0].termId").value("202009"))//
 				.andExpect(jsonPath("$[0].weekno").value(1)) //
 				.andExpect(jsonPath("$[1]").doesNotExist());
 	}

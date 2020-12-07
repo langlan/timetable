@@ -1,7 +1,5 @@
 package com.jytec.cs.domain;
 
-import java.beans.Transient;
-
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -67,23 +65,12 @@ public class Term extends BaseModel<String>{
 		return term;
 	}
 
+	/** mark */
 	public static interface TermAware {
-		short getTermYear();
-
-		byte getTermMonth();
-
-		void setTermYear(short termYear);
-
-		void setTermMonth(byte termMonth);
-
-		@Transient
-		default Term getTerm() {
-			return Term.of(getTermYear(), getTermMonth());
-		}
-
 		default void setTerm(Term term) {
-			setTermYear(term.getTermYear());
-			setTermMonth(term.getTermMonth());
+			setTermId(term.getId());
 		}
+
+		void setTermId(String termId);
 	}
 }

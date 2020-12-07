@@ -6,7 +6,7 @@ import java.util.function.Function;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
-public class Col<CONTEXT, V> {
+public class Col<V, CONTEXT> {
 	private boolean optional;
 	private String headerPattern;
 	private Function<Cell, V> converter; // convert cell to V value before it being consuming with context.
@@ -24,19 +24,27 @@ public class Col<CONTEXT, V> {
 		this.converter = cellConverter;
 	}
 
-	Col<CONTEXT, V> optional() {
+	public Col<V, CONTEXT> optional() {
 		this.optional = true;
 		return this;
 	}
 
-	// in this case, V is Cell
-	static <CONTEXT> Col<CONTEXT, Cell> create(String headerPatter, BiConsumer<Cell, CONTEXT> cellConsumer) {
-		return new Col<CONTEXT, Cell>(headerPatter, cellConsumer);
+	public boolean isOptional() {
+		return optional;
 	}
 
-	static <CONTEXT, V> Col<CONTEXT, V> create(String headerPatter, Function<Cell, V> converter,
+	public String getHeaderPattern() {
+		return headerPattern;
+	}
+
+	// in this case, V is Cell
+	static <CONTEXT> Col<Cell, CONTEXT> create(String headerPatter, BiConsumer<Cell, CONTEXT> cellConsumer) {
+		return new Col<Cell, CONTEXT>(headerPatter, cellConsumer);
+	}
+
+	static <V, CONTEXT> Col<V, CONTEXT> create(String headerPatter, Function<Cell, V> converter,
 			BiConsumer<V, CONTEXT> cellConsumer) {
-		return new Col<CONTEXT, V>(headerPatter, converter, cellConsumer);
+		return new Col<V, CONTEXT>(headerPatter, converter, cellConsumer);
 	}
 
 	/**
@@ -46,31 +54,43 @@ public class Col<CONTEXT, V> {
 	 * @return a positioned-cell-consumer witch pick a cell by the col-index, convert, consume the converted value with
 	 *         context.
 	 */
-	BiConsumer<Row, CONTEXT> asCellBiConsumer(int colNum) {
+	BiConsumer<Row, CONTEXT> buildRowProcessor(int colNum) {
+		Positional pos = Positional.fixed(colNum);
 		if (converter != null) {
-			return Positional.fixed(colNum).asCellPicker(converter).asBiConsumer(cellConsumer);
+			return pos.asCellPicker(converter).link(cellConsumer);
+		} else {
+			@SuppressWarnings("unchecked")
+			BiConsumer<Cell, CONTEXT> _c = (BiConsumer<Cell, CONTEXT>) cellConsumer;
+			return pos.asCellPicker().link(_c);
 		}
-		@SuppressWarnings("unchecked")
-		BiConsumer<Cell, CONTEXT> _c = (BiConsumer<Cell, CONTEXT>) cellConsumer;
-		return Positional.fixed(colNum).asCellPicker().asBiConsumer(_c);
-
 	}
 
 	/** find the first matched cell, return its index (0 based). */
 	int indexOfFirst(Row headerRow) {
-		for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-			Cell cell = headerRow.getCell(i);
-			String header = cell == null ? null : cell.toString().trim();
-			if (header == null)
-				continue;
-			if (header.matches(headerPattern)) {
-				return i;
-			}
-		}
-		if (!this.optional) {
+		Cell cell = matches(headerRow);
+		if (cell != null) {
+			return cell.getColumnIndex();
+		} else if (!this.optional) {
 			throw new IllegalStateException("Could not find the column：" + headerPattern);
 		}
 		return -1;
 	}
 
+	public Cell matches(Row headerRow) {
+		if (headerRow == null) {
+			return null;
+		}
+		for (int colIdx = 0; colIdx < headerRow.getLastCellNum(); colIdx++) {
+			Cell cell = headerRow.getCell(colIdx);
+			String header = cell == null ? null : cell.toString().trim();
+			if (this.matchesHeader(header)) {
+				return cell;
+			}
+		}
+		return null;
+	}
+
+	protected boolean matchesHeader(String colHeader) {
+		return colHeader != null && colHeader.matches(headerPattern);
+	}
 }

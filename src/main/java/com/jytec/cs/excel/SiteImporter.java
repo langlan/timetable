@@ -1,5 +1,7 @@
 package com.jytec.cs.excel;
 
+import static com.jytec.cs.excel.parse.Texts.firstInt;
+import static com.jytec.cs.excel.parse.Texts.firstIntStr;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
@@ -36,13 +38,13 @@ public class SiteImporter {
 	private Columns<Site> cols = new Columns<>(); // template.
 
 	public SiteImporter() {
-		cols.scol("教室编号", (it, m) -> m.setCode(TextParser.firstIntStr(it))); // some are number-type
+		cols.scol("教室编号", (it, m) -> m.setCode(firstIntStr(it))); // some are number-type
 		cols.scol("教室名称", (it, m) -> m.setName(it));
-		cols.scol("座位数", (it, m) -> m.setCapacity(TextParser.parseInt(it))); // some are number-type
+		cols.scol("座位数", (it, m) -> m.setCapacity(firstInt(it))); // some are number-type
 		cols.scol("教室类别", (it, m) -> m.setRoomType(it));
 		cols.scol("最终调换", (it, m) -> m.setDept(new Dept(it)));
 		cols.scol("多媒体改造", (it, m) -> m.setMultimedia(it));
-		cols.scolOptional("校内实训基地名称", (it, m) -> m.setName4Training(it));
+		cols.scol("校内实训基地名称", (it, m) -> m.setName4Training(it)).optional();
 	}
 
 	@Transactional
@@ -50,6 +52,7 @@ public class SiteImporter {
 		Workbook wb = WorkbookFactory.create(file, null, true);
 		doImport(wb);
 		wb.close();
+		deptRepository.updateTypeOfElse();
 	}
 
 	protected void doImport(Workbook wb) {
@@ -64,7 +67,8 @@ public class SiteImporter {
 	protected void doImport(Sheet sheet) {
 		int headerRowIndex = 1, dataFirstRowIndex = 2;
 		Row headerRow = sheet.getRow(headerRowIndex);
-		BiConsumer<Row, Site> rowParser = cols.buildByHeaderRow(headerRow);
+		BiConsumer<Row, Site> rowParser = cols.buildRowProcessorByHeaderRow(headerRow);
+
 		if (rowParser == null) {
 			log.warn("Ignore sheet :" + sheet.getSheetName());
 			return;

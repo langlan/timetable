@@ -5,11 +5,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
 import org.springframework.util.Assert;
 
 import com.jytec.cs.domain.Class;
+import com.jytec.cs.domain.Dept;
 import com.jytec.cs.domain.Major;
 import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.TrainingScheduleImporter.TitleInfo.TimeInfo;
@@ -51,36 +50,53 @@ public interface TextParser {
 	}
 
 	/**
+	 * only set name.
+	 * 
+	 * @param deptName
+	 * @return if name not empty. or null.
+	 */
+	public static Dept parseDept(String deptName) {
+		if (deptName != null && !deptName.trim().isEmpty()) {
+			Dept dept = new Dept();
+			dept.setName(deptName);
+			return dept;
+		}
+		return null;
+	}
+
+	/**
 	 * 
 	 * @param classNameWithDegree
-	 * @return a Class instance[name,year,classNo,degree] with major[shortName,degree]
+	 * @return a Class instance[name,year,classNo,degree] with major[shortName,degree] or null if not match.
 	 */
 	public static Class parseClass(String classNameWithDegree) {
 		// String text = cell.toString();
 		Matcher m = CLASS_NAME_WITH_DEGREE.matcher(classNameWithDegree);
-		m.find();
-		String majorShortName = m.group(1);
-		String shortYear = m.group(2);
-		String classNo = m.group(3);
-		String degree = m.group(4);
-		Assert.isTrue(shortYear.length() == 2, "format: class-year suppose to be 2 characters.");
+		if (m.find()) {
+			String majorShortName = m.group(1);
+			String shortYear = m.group(2);
+			String classNo = m.group(3);
+			String degree = m.group(4);
+			Assert.isTrue(shortYear.length() == 2, "format: class-year suppose to be 2 characters.");
 
-		String year = "20" + shortYear;
-		String classNameWithoutDegree = majorShortName + shortYear + "-" + classNo;
+			String year = "20" + shortYear;
+			String classNameWithoutDegree = majorShortName + shortYear + "-" + classNo;
 
-		Major major = new Major();
-		major.setShortName(majorShortName + "[" + degree + "]");
-		major.setDegree(degree);
+			Major major = new Major();
+			major.setShortName(majorShortName + "[" + degree + "]");
+			major.setDegree(degree);
 
-		Class clazz = new Class();
-		clazz.setMajor(major);
-		clazz.setName(handleMalFormedDegree(classNameWithDegree));
-		Assert.isTrue(clazz.getName().equals(classNameWithoutDegree + "[" + degree + "]"),
-				"format: degree handle failed");
-		clazz.setDegree(degree);
-		clazz.setYear(Short.parseShort(year));
-		clazz.setClassNo(Byte.parseByte(classNo));
-		return clazz;
+			Class clazz = new Class();
+			clazz.setMajor(major);
+			clazz.setName(handleMalFormedDegree(classNameWithDegree));
+			Assert.isTrue(clazz.getName().equals(classNameWithoutDegree + "[" + degree + "]"),
+					"format: degree handle failed");
+			clazz.setDegree(degree);
+			clazz.setYear(Short.parseShort(year));
+			clazz.setClassNo(Byte.parseByte(classNo));
+			return clazz;
+		}
+		return null;
 	}
 
 	final Pattern CLASSES_NAME = Pattern.compile("(?<major>.+?)(?<year>\\d+)-" //
@@ -89,11 +105,7 @@ public interface TextParser {
 			+ "(?:[\\[\\(（]+(?<degree>.+?)[\\]\\)）])?"); // degree: optional
 
 	/**
-	 * <ul>
-	 * <li>standard+</li>
-	 * <li>majorYear-no~no :: (with no degree or （三二）)</li>
-	 * <li>majorYear级no－no（系部）::</li>
-	 * </ul>
+	 * <ul> <li>standard+</li> <li>majorYear-no~no :: (with no degree or （三二）)</li> <li>majorYear级no－no（系部）::</li> </ul>
 	 */
 	public static Class[] parseClasses(String classesRangeText, String defaultDegree) {
 		List<Class> ret = new ArrayList<>();
@@ -131,66 +143,31 @@ public interface TextParser {
 
 	/**
 	 * 
-	 * @param text  name[degree]
-	 * @param major
-	 * @return the major passed in or create a Major instance with [name, degree] set.
+	 * @param majorNameWithDegree name[degree]
+	 * @return the major passed in or create a Major instance with [name, degree] set. or null if pattern not match.
 	 */
-	public static Major parseMajor(String text, Major major/* , boolean shortName */) {
-		Matcher m = MAJOR.matcher(text);
-		m.find();
-		String name = m.group(1);
-		String degree = m.group(2);
+	public static Major parseMajor(String majorNameWithDegree /* , boolean shortName */) {
+		Matcher m = MAJOR.matcher(majorNameWithDegree);
+		if (m.find()) {
+			String name = m.group(1);
+			String degree = m.group(2);
 
-		if (major == null)
-			major = new Major();
+			Major major = new Major();
+			major.setDegree(degree);
+			// if (shortName) {
+			// major.setShortName(name);
+			// } else {
+			major.setName(name + "[" + degree + "]");
+			// }
 
-		major.setDegree(degree);
-		// if (shortName) {
-		// major.setShortName(name);
-		// } else {
-		major.setName(name + "[" + degree + "]");
-		// }
-
-		return major;
+			return major;
+		}
+		return null;
 	}
 
 	public static void assertEquals(String expect, String actual) {
 		if (expect == null && actual != null || !expect.equals(actual))
 			throw new IllegalStateException("Expect [" + expect + "], but was [" + actual + "].");
-	}
-
-	Pattern INTTEGER = Pattern.compile("\\d+");
-
-	/** find the first digital sequence and parse */
-	public static int parseInt(String text) {
-		Matcher m = INTTEGER.matcher(text);
-		if (m.find()) {
-			return Integer.parseInt(m.group());
-		}
-		return 0;
-	}
-
-	public static String firstIntStr(String text) {
-		Matcher m = INTTEGER.matcher(text);
-		if (m.find()) {
-			return m.group();
-		}
-		return null;
-	}
-
-	/** always return a not null string, trimed */
-	public static String cellString(Cell cell) {
-		String text = cell != null ? cell.toString() : "";
-		return text.trim();
-	}
-
-	/** Concatenate all cell strings */
-	public static String rowString(Row row) {
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < row.getLastCellNum(); i++) {
-			sb.append(cellString(row.getCell(i)));
-		}
-		return sb.toString();
 	}
 
 	// ========== Schedule ============
@@ -295,14 +272,6 @@ public interface TextParser {
 		String lineBreakPattern = "(\\s*)?[\r\n]+(\\s*)?";
 		String[] lines = text.split(lineBreakPattern);
 		return lines;
-	}
-
-	public static String atLocaton(Row row) {
-		return "@Sheet【" + row.getSheet().getSheetName() + "】行【" + (row.getRowNum() + 1) + "】";
-	}
-
-	public static String atLocaton(Cell cell) {
-		return "@Sheet【" + cell.getSheet().getSheetName() + "】单元格【" + cell.getAddress() + "】";
 	}
 
 	static Pattern TERM_PATTERN = Pattern.compile("(\\d{4,})" // termYear : required

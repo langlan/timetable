@@ -1,17 +1,14 @@
 package com.jytec.cs.excel;
 
-import static com.jytec.cs.excel.TextParser.atLocaton;
-import static com.jytec.cs.excel.TextParser.cellString;
+import static com.jytec.cs.excel.parse.Texts.atLocaton;
+import static com.jytec.cs.excel.parse.Texts.cellString;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import javax.persistence.NonUniqueResultException;
 import javax.transaction.Transactional;
 
 import org.apache.commons.logging.Log;
@@ -24,14 +21,11 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import com.jytec.cs.dao.ClassCourseRepository;
 import com.jytec.cs.dao.ScheduleRepository;
-import com.jytec.cs.dao.SiteRepository;
-import com.jytec.cs.dao.TeacherRepository;
 import com.jytec.cs.domain.Class;
 import com.jytec.cs.domain.ClassCourse;
 import com.jytec.cs.domain.Schedule;
@@ -43,17 +37,13 @@ import com.jytec.cs.excel.TextParser.TimeRange;
 import com.jytec.cs.excel.TrainingScheduleImporter.TitleInfo.TimeInfo;
 import com.jytec.cs.excel.parse.MergingAreas;
 import com.jytec.cs.excel.parse.Regex;
-import com.jytec.cs.service.AutoCreateService;
 
 @Service
 public class TrainingScheduleImporter {
 	private static final Log log = LogFactory.getLog(TrainingScheduleImporter.class);
-	private @Autowired ClassCourseRepository classCourseRepository;
 	// private @Autowired ClassRepository classRepository;
-	private @Autowired TeacherRepository teacherRepository;
-	private @Autowired SiteRepository siteRepository;
 	private @Autowired ScheduleRepository scheduleRespository;
-	private @Autowired AutoCreateService autoCreateService;
+	private @Autowired ApplicationContext applicationContext;
 
 	@Transactional
 	public void importFile(Term term, int classYear, File file) throws EncryptedDocumentException, IOException {
@@ -90,7 +80,7 @@ public class TrainingScheduleImporter {
 		int titleRowSpan = -1;
 		for (int colIndex = 0; colIndex < headerRow.getLastCellNum(); colIndex++) {
 			Cell headerCell = headerRow.getCell(colIndex);
-			String header = TextParser.cellString(headerCell);
+			String header = cellString(headerCell);
 			if (header.isEmpty())
 				continue;
 
@@ -109,7 +99,7 @@ public class TrainingScheduleImporter {
 				for (int colIndex4TR = ma.getFirstColumn(); colIndex4TR <= ma.getLastColumn(); colIndex4TR++) {
 					for (int rowIndex = headerRowIndex + 1; rowIndex < headerRowIndex + titleRowSpan; rowIndex++) {
 						Cell timeRangeCell = MergingAreas.getCell(sheet, rowIndex, colIndex4TR);
-						String subHeader = TextParser.cellString(timeRangeCell);
+						String subHeader = cellString(timeRangeCell);
 						if (!Regex.matchesPart(timeRangeSubHeaderPattern, subHeader))
 							continue; // maybe a.m. | p.m.
 
@@ -124,11 +114,11 @@ public class TrainingScheduleImporter {
 					}
 				}
 			} else if (!Pattern.matches(otherAcceptableHeaderPattern, header)) {
-				throw new IllegalStateException("未识别的表头【" + header + "】" + TextParser.atLocaton(headerCell));
+				throw new IllegalStateException("未识别的表头【" + header + "】" + atLocaton(headerCell));
 			}
 		}
 
-		ModelMappingHelper mhelper = new ModelMappingHelper(term);
+		ModelMappingHelper mhelper = applicationContext.getBean(ModelMappingHelper.class).term(term);
 		String classYearFilter = Integer.toString(classYear % 2000);
 		int imported = 0, totalRow = 0;
 		for (int rowIndex = dataFirstRowIndex; rowIndex < sheet.getLastRowNum(); rowIndex++) {
@@ -161,7 +151,7 @@ public class TrainingScheduleImporter {
 				// fixed issue : same class may have multiple rows to correspond different week-no.
 				// so we can not use term+class (use term+class+week-no instead) to determine duplicate import.
 				int count = scheduleRespository.countTrainingByClassAndTermAndWeek(pc.getName(), pc.getDegree(),
-						term.getTermYear(), term.getTermMonth(), weekRange.weeknoStart, weekRange.weeknoEnd);
+						term.getId(), weekRange.weeknoStart, weekRange.weeknoEnd);
 				if (count > 0) {
 					log.info("忽略班级（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(row));
 					continue;
@@ -203,8 +193,7 @@ public class TrainingScheduleImporter {
 							Schedule schedule = new Schedule();
 							// TODO: for TRAININGTYPE_ENTERPRISE
 							schedule.setTrainingType(Schedule.TRAININGTYPE_SCHOOL);
-							schedule.setTermYear(term.getTermYear());
-							schedule.setTermMonth(term.getTermMonth());
+							schedule.setTerm(term);
 							schedule.setTheClass(classCourse.getTheClass());
 							schedule.setCourse(classCourse.getCourse());
 							// schedule.setClassCourse(classCourse);
@@ -226,66 +215,7 @@ public class TrainingScheduleImporter {
 		} // end of each row
 		log.info("成功导入【" + imported + "/" + totalRow + "】行，@【" + sheet.getSheetName() + "】");
 		// Should it be called through other UI to keep data-import and date-build independent.
-		scheduleRespository.updateDateByTerm(term.getTermYear(), term.getTermMonth());
-	}
-
-	class ModelMappingHelper {
-		final Term term;
-		Map<String, ClassCourse> classCoursesIndexedByName;
-
-		public ModelMappingHelper(Term term) {
-			this.term = term;
-			List<Object[]> all = classCourseRepository.findAllWithKeyByTerm(term.getTermYear(), term.getTermMonth());
-			classCoursesIndexedByName = all.stream().collect(Collectors.toMap(it -> it[0].toString(), it -> (ClassCourse) it[1]));
-			if (all.size() != classCoursesIndexedByName.size())
-				throw new IllegalStateException("发现现存【班级选课表】中存在重复数据！");
-		}
-
-		public Site findSite(String site, Cell cell) {
-			// NODE: name is not actually a unique key. but for theory course, we suppose so.
-			// TODO: Examine: how training-schedule specify a site when name not unique.
-			try {
-				return siteRepository.findUniqueByName(site).orElseGet(() -> {
-					String msg = "找不到上课地点【" + site + "】" + atLocaton(cell);
-					log.warn(msg);
-					// throw new IllegalStateException(warn);
-					return autoCreateService.createSiteWithAutoCode(site);
-				});
-			} catch (IncorrectResultSizeDataAccessException | NonUniqueResultException e) {
-				throw new IllegalStateException("非唯一：存在多个同名上课地点【" + site + "】" + atLocaton(cell));
-			}
-		}
-
-		public Teacher findTeacher(String teacherName, ClassCourse classCourse, Cell cell) {
-			// validate/locate-by teacher-name.
-			if (classCourse.getTeacher().getName().equals(teacherName)) { // validate
-				return classCourse.getTeacher();
-			} else {
-				if (!classCourse.getTeacherNames().contains(teacherName)) {
-					String msg = "课程教师名与选课数据不匹配：" + "在导【" + teacherName + "】 VS 选课【" + classCourse.getTeacherNames()
-							+ "】" + atLocaton(cell);
-					log.warn(msg);
-				}
-				return teacherRepository.findByName(teacherName).orElseGet(() -> {
-					String msg = "找不到教师【" + teacherName + "】" + atLocaton(cell);
-					// throw new IllegalStateException(msg);
-					log.warn(msg);
-					return autoCreateService.createTeacherWithAutoCode(teacherName);
-				});
-			}
-		}
-
-		public ClassCourse findClassCourse(String classNameWithDegree, String course, Cell cell) {
-			String classCourseKey = classNameWithDegree + "-" + course;
-			ClassCourse classCourse = classCoursesIndexedByName.get(classCourseKey);
-
-			if (classCourse == null) {
-				throw new IllegalStateException("无法找到【班级选课】记录：" + classCourseKey + atLocaton(cell));
-			}
-
-			return classCourse;
-		}
-
+		scheduleRespository.updateDateByTerm(term.getId());
 	}
 
 	static class TitleInfo {

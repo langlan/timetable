@@ -8,29 +8,20 @@ import javax.persistence.UniqueConstraint;
 import com.jytec.cs.domain.Term.TermAware;
 
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "termYear", "termMonth", "weekno" }))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "termId", "weekno" }))
 public class Week extends BaseModel<String> implements TermAware{
-	private short termYear;
-	private byte termMonth;
+	private String termId;
 	private byte weekno;
 	@Id
 	private String firstDay; // format: ref Date.date
 	private String lastDay; // format: ref Date.date
 
-	public short getTermYear() {
-		return termYear;
+	public String getTermId() {
+		return termId;
 	}
 
-	public void setTermYear(short termYear) {
-		this.termYear = termYear;
-	}
-
-	public byte getTermMonth() {
-		return termMonth;
-	}
-
-	public void setTermMonth(byte termMonth) {
-		this.termMonth = termMonth;
+	public void setTermId(String termId) {
+		this.termId = termId;
 	}
 
 	public byte getWeekno() {

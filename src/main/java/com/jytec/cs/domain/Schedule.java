@@ -11,13 +11,14 @@ import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.jytec.cs.domain.Term.TermAware;
 import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Table(uniqueConstraints = {
-		@UniqueConstraint(columnNames = { "the_class_id", "course_code", "termYear", "termMonth", "weekno", //
+		@UniqueConstraint(columnNames = { "the_class_id", "course_code", "termId", "weekno", //
 				"dayOfWeek", "timeStart", "timeEnd" }) })
 @Entity
-public class Schedule extends BaseModel<Long> {
+public class Schedule extends BaseModel<Long> implements TermAware {
 	public static final String TRAININGTYPE_NON = "N";
 	public static final String TRAININGTYPE_SCHOOL = "S";
 	public static final String TRAININGTYPE_ENTERPRISE = "E";
@@ -42,8 +43,7 @@ public class Schedule extends BaseModel<Long> {
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Site site; // 上课地点
 	// 时间
-	private short termYear;
-	private byte termMonth;
+	private String termId;
 	private byte weekno, dayOfWeek;
 	private String date; // format: ref Date.date
 	private byte timeStart, timeEnd; // 起止课时
@@ -82,20 +82,12 @@ public class Schedule extends BaseModel<Long> {
 		this.teacher = teacher;
 	}
 
-	public short getTermYear() {
-		return termYear;
+	public String getTermId() {
+		return termId;
 	}
 
-	public void setTermYear(short termYear) {
-		this.termYear = termYear;
-	}
-
-	public byte getTermMonth() {
-		return termMonth;
-	}
-
-	public void setTermMonth(byte termMonth) {
-		this.termMonth = termMonth;
+	public void setTermId(String termId) {
+		this.termId = termId;
 	}
 
 	public byte getWeekno() {

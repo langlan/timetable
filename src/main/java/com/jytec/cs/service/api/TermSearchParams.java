@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 import com.jytec.cs.excel.parse.Regex;
 
 public class TermSearchParams extends SearchParameters {
+	public String termId;
 	public Short termYear;
 	public Byte termMonth;
 
@@ -14,9 +15,14 @@ public class TermSearchParams extends SearchParameters {
 	public void setTerm(String term) {
 		String[] groups = Regex.groups(YEAR_MONTH, term);
 		if (groups != null) {
-			setTermYear(Short.parseShort(groups[1]));
-			setTermMonth(Byte.parseByte(groups[2]));
+			short year = Short.parseShort(groups[1]);
+			byte month = Byte.parseByte(groups[2]);
+			setTermId(year + "0" + month);
 		}
+	}
+
+	public void setTermId(String termId) {
+		this.termId = termId;
 	}
 
 	public void setTermYear(Short termYear) {
@@ -26,5 +32,5 @@ public class TermSearchParams extends SearchParameters {
 	public void setTermMonth(Byte termMonth) {
 		this.termMonth = termMonth;
 	}
-	
+
 }

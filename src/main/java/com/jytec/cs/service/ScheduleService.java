@@ -29,8 +29,7 @@ public class ScheduleService extends ModelService<Schedule> {
 
 	void applySearchParams(WhereFragment<Sql> where, ScheduleSearchParams params) {
 		where //@formatter:off
-			.eq("m.termYear", params.termYear)
-			.eq("m.termMonth", params.termMonth)
+			.eq("m.termId", params.termId)
 			.eq("m.weekno", params.weekno)
 			.eq("m.dayOfWeek", params.dayOfWeek)
 			.eq("m.timeStart", params.timeStart)

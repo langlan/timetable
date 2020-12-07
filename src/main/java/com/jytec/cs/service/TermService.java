@@ -71,6 +71,7 @@ public class TermService {
 			com.jytec.cs.domain.Date day = new com.jytec.cs.domain.Date();
 			cw.goMonday();
 			for (int ii = 0; ii < 7; ii++) {
+				day.setTerm(term);
 				day.setDate(cw.format());
 				day.setDayOfWeek((byte) (ii + 1)); // 1 based.
 				day.setWeekno(week.getWeekno());
@@ -87,7 +88,7 @@ public class TermService {
 
 	@Transactional
 	public int rebuildScheduleDate(Term term) {
-		return scheduleRepository.updateDateByTerm(term.getTermYear(), term.getTermMonth());
+		return scheduleRepository.updateDateByTerm(term.getId());
 	}
 
 	@Transactional
@@ -98,6 +99,7 @@ public class TermService {
 				.endGrp()
 				.eq("m.termYear", params.termYear)
 				.eq("m.termMonth", params.termMonth)
+				.eq("m.id", params.termId)
 			.endWhere()
 			.orderBy("m.id"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
@@ -106,19 +108,17 @@ public class TermService {
 	@Transactional
 	public List<Term> search(WeekSearchParams params) {
 		Sql ql = new Sql().select("m").from("Week m").where() //@formatter:off
-				.eq("m.termYear", params.termYear)
-				.eq("m.termMonth", params.termMonth)
+				.eq("m.termId", params.termId)
 				.eq("m.weekno", params.weekno)
 			.endWhere()
-			.orderBy("m.termYear, m.termMonth, m.weekno"); //@formatter:on
+			.orderBy("m.termId, m.weekno"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 	
 	@Transactional
 	public List<com.jytec.cs.domain.Date> search(DateSearchParams params) {
 		Sql ql = new Sql().select("m").from("Date m").where() //@formatter:off
-				.eq("m.termYear", params.termYear)
-				.eq("m.termMonth", params.termMonth)
+				.eq("m.termId", params.termId)
 				.eq("m.weekno", params.weekno)
 				.eq("m.dayOfWeek", params.dayOfWeek)
 				.eq("m.holiday", params.holiday)

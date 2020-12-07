@@ -32,7 +32,8 @@ public class TextParserTest {
 	public void testLineSpritWithTrim() {
 		System.out.println("\\r\\n".trim().isEmpty());
 		System.out.println(Arrays.asList("abc".split("[\\r\\n]+")));
-		System.out.println(Arrays.asList("abc \r\n  def".split("(\\s*)?[\r\n]+(\\s*)?")));
+		System.out.println(Arrays.asList("abc \r\n  def".split("\\s*[\r\n]+\\s*")));
+		System.out.println(Arrays.asList("abc ,  def".split("\\s*,\\s*")));
 	}
 
 	@Test

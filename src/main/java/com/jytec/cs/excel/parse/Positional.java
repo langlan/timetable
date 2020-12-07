@@ -1,5 +1,7 @@
 package com.jytec.cs.excel.parse;
 
+import static com.jytec.cs.excel.parse.Texts.cellString;
+
 import java.util.function.Function;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -24,12 +26,12 @@ public interface Positional {
 	 * return a function witch get a cell from row by the {@link #getPosition()}, then convert the cell by converter
 	 */
 	default <R> CellPicker<R> asCellPicker(Function<Cell, R> converter) {
-		return row -> converter.apply(row.getCell(getPosition()));
+		return asCellPicker().withConverter(converter);
 	}
 
 	/** return a function witch get a cell from row by the {@link #getPosition()}, return cell.toString() */
 	default CellPicker<String> asCellStringPicker() {
-		return row -> row.getCell(getPosition()).toString();
+		return row -> cellString(row.getCell(getPosition()));
 	}
 
 	default Function<Sheet, Row> asRowPicker() {

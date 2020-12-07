@@ -1,7 +1,8 @@
 package com.jytec.cs.excel;
 
-import static com.jytec.cs.excel.TextParser.atLocaton;
-import static com.jytec.cs.excel.TextParser.cellString;
+import static com.jytec.cs.excel.parse.Texts.atLocaton;
+import static com.jytec.cs.excel.parse.Texts.cellString;
+import static com.jytec.cs.excel.parse.Texts.rowString;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +39,7 @@ import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.TextParser.ScheduledCourse;
 import com.jytec.cs.excel.TextParser.TimeRange;
+import com.jytec.cs.service.AuthService;
 import com.jytec.cs.service.AutoCreateService;
 
 @Service
@@ -49,12 +51,14 @@ public class ScheduleImporter {
 	private @Autowired SiteRepository siteRepository;
 	private @Autowired ScheduleRepository scheduleRespository;
 	private @Autowired AutoCreateService autoCreateService;
+	private @Autowired AuthService authService;
 
 	@Transactional
 	public void importFile(Term term, int classYear, File file) throws EncryptedDocumentException, IOException {
 		try (Workbook wb = WorkbookFactory.create(file, null, true)) {
 			doImport(term, classYear, wb);
 		}
+		authService.assignIdcs();
 	}
 
 	protected void doImport(Term term, int classYear, Workbook wb) {
@@ -83,7 +87,7 @@ public class ScheduleImporter {
 
 		// try recognize term and validate.
 		Row titleRow = sheet.getRow(0);
-		String title = TextParser.rowString(titleRow);
+		String title = rowString(titleRow);
 		Term pTerm = TextParser.parseTerm(title);
 		if (pTerm == null) {
 			log.warn("无法从标题中识别学期：" + title + atLocaton(titleRow));
@@ -97,14 +101,14 @@ public class ScheduleImporter {
 		TimeInfo[] timeInfos = new TimeInfo[headerRow.getLastCellNum()];
 		for (int i = 0; i < headerRow.getLastCellNum(); i++) {
 			Cell headerCell = headerRow.getCell(i);
-			String header = TextParser.cellString(headerCell);
+			String header = cellString(headerCell);
 
 			if ("课表信息".equals(header)) {
 				classColIndex = i;
 			} else if (header.indexOf("/") > 0) {
 				Matcher m = timePattern.matcher(header);
 				if (!m.find()) // TODO: use MessageSource?
-					throw new IllegalStateException("未识别的表头【" + header + "】" + TextParser.atLocaton(headerCell));
+					throw new IllegalStateException("未识别的表头【" + header + "】" + atLocaton(headerCell));
 				timeInfos[i] = new TimeInfo();
 				timeInfos[i].dayOfWeek = (byte) (weekWords.indexOf(m.group(1)) + 1);
 				timeInfos[i].timeStart = Byte.parseByte(m.group(2));
@@ -112,7 +116,7 @@ public class ScheduleImporter {
 			}
 		}
 
-		List<Object[]> all = classCourseRepository.findAllWithKeyByTerm(term.getTermYear(), term.getTermMonth());
+		List<Object[]> all = classCourseRepository.findAllIndexedByNames(term.getId());
 		Map<String, ClassCourse> indexed = all.stream()
 				.collect(Collectors.toMap(it -> it[0].toString(), it -> (ClassCourse) it[1]));
 		if (all.size() != indexed.size())
@@ -144,8 +148,7 @@ public class ScheduleImporter {
 			// 2.2 缺点：在数据未曾修改时，浪费 id
 			// 3. 全部清空，全量导入
 			// 3.1 优点：适合【测试场景】、【全量重导需求（排课功能脱离或表表隔离）】
-			if (scheduleRespository.countNonTrainingByClassAndTerm(pc.getName(), pc.getDegree(), term.getTermYear(),
-					term.getTermMonth()) > 0) {
+			if (scheduleRespository.countNonTrainingByClassAndTerm(pc.getName(), pc.getDegree(), term.getId()) > 0) {
 				log.info("忽略班级（已有理论课排课记录）：【" + classNameWithDegree + "】" + atLocaton(row));
 				continue;
 			}
@@ -225,8 +228,7 @@ public class ScheduleImporter {
 						}
 						Schedule schedule = new Schedule();
 						schedule.setTrainingType(Schedule.TRAININGTYPE_NON);
-						schedule.setTermYear(term.getTermYear());
-						schedule.setTermMonth(term.getTermMonth());
+						schedule.setTerm(term);
 						schedule.setTheClass(classCourse.getTheClass());
 						schedule.setCourse(classCourse.getCourse());
 						// schedule.setClassCourse(classCourse);
@@ -246,7 +248,7 @@ public class ScheduleImporter {
 		}
 		log.info("成功导入【" + imported + "/" + totalRow + "】行，@【" + sheet.getSheetName() + "】");
 		// Should it be called through other UI to keep data-import and date-build independent.
-		scheduleRespository.updateDateByTerm(term.getTermYear(), term.getTermMonth());
+		scheduleRespository.updateDateByTerm(term.getId());
 	}
 
 }

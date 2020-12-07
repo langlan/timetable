@@ -11,16 +11,15 @@ import com.jytec.cs.service.TermService;
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
 	@Query("Select count(*) From Schedule s Where " //
-			+ "s.termYear=?3 And s.termMonth=?4 And " //
+			+ "s.termId=?3 And " //
 			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType='" + Schedule.TRAININGTYPE_NON + "'")
-	int countNonTrainingByClassAndTerm(String className, String classDegree, short termYear, byte termMonth);
+	int countNonTrainingByClassAndTerm(String className, String classDegree, String termId);
 
 	@Query("Select count(*) From Schedule s Where " //
-			+ "s.termYear=?3 And s.termMonth=?4 And " //
+			+ "s.termId=?3 And " //
 			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType<>'" + Schedule.TRAININGTYPE_NON
-			+ "' And " + "s.weekno between ?5 And ?6")
-	int countTrainingByClassAndTermAndWeek(String name, String degree, short termYear, byte termMonth, byte weeknoStart,
-			byte weeknoEnd);
+			+ "' And " + "s.weekno between ?4 And ?5")
+	int countTrainingByClassAndTermAndWeek(String name, String degree, String termId, byte weeknoStart, byte weeknoEnd);
 
 	/**
 	 * use when rebuild/init term data, or after import schedule data.
@@ -28,10 +27,11 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 	 * @see TermService#rebuildScheduleDate(com.jytec.cs.domain.Term)
 	 */
 	@Modifying(flushAutomatically = true, clearAutomatically = true)
-	@Query(value = "Update Schedule s set s.date="
-			+ "(Select d.date From Week w Join Date d On(d.date between w.firstDay And w.lastDay) "
-			+ "  Where w.termYear=s.termYear And w.termMonth=s.termMonth And w.weekno=s.weekno And d.dayOfWeek=s.dayOfWeek) "
-			+ "Where s.termYear=?1 And s.termMonth=?2")
-	int updateDateByTerm(short termYear, byte termMonth);
+	@Query(value = "Update Schedule s set s.date=" //
+			+ "(Select d.date From Week w" //
+			+ "  Join Date d On(d.date between w.firstDay And w.lastDay) " //
+			+ "  Where w.termId=s.termId And w.weekno=s.weekno And d.dayOfWeek=s.dayOfWeek) " //
+			+ "Where s.termId=?1")
+	int updateDateByTerm(String termId);
 
 }

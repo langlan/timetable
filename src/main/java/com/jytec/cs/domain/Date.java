@@ -3,12 +3,15 @@ package com.jytec.cs.domain;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import com.jytec.cs.domain.Term.TermAware;
+
 @Entity
-public class Date extends BaseModel<String>{ // 教学日期
+public class Date extends BaseModel<String> implements TermAware{ // 教学日期
 	public static final String DATE_FORMAT = "yyyy-MM-dd";
 	
 	@Id
 	private String date;
+	private String termId;
 	private byte weekno; // 1 based
 	private byte dayOfWeek; // 1based
 	private short year;
@@ -21,6 +24,14 @@ public class Date extends BaseModel<String>{ // 教学日期
 
 	public void setDate(String date) {
 		this.date = date;
+	}
+
+	public String getTermId() {
+		return termId;
+	}
+
+	public void setTermId(String termId) {
+		this.termId = termId;
 	}
 
 	public byte getWeekno() {

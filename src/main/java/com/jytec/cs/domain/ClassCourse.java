@@ -11,18 +11,18 @@ import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.jytec.cs.domain.Term.TermAware;
 import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Table(uniqueConstraints = { //
-		@UniqueConstraint(columnNames = { "termYear", "termMonth", "the_class_id", "course_code" }) //
+		@UniqueConstraint(columnNames = { "termId", "the_class_id", "course_code" }) //
 })
 @Entity
-public class ClassCourse extends BaseModel<Long> {
+public class ClassCourse extends BaseModel<Long> implements TermAware{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
-	private short termYear;
-	private byte termMonth;
+	private String termId;
 	@JsonProperty("classId")
 	@JsonSerialize(using = ModelPropAsIdSerializer.class)
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -45,20 +45,12 @@ public class ClassCourse extends BaseModel<Long> {
 		this.id = id;
 	}
 
-	public short getTermYear() {
-		return termYear;
+	public String getTermId() {
+		return termId;
 	}
 
-	public void setTermYear(short termYear) {
-		this.termYear = termYear;
-	}
-
-	public byte getTermMonth() {
-		return termMonth;
-	}
-
-	public void setTermMonth(byte termMonth) {
-		this.termMonth = termMonth;
+	public void setTermId(String termId) {
+		this.termId = termId;
 	}
 
 	public Class getTheClass() {
