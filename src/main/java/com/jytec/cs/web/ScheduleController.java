@@ -28,18 +28,18 @@ public class ScheduleController {
 		return scheduleService.search(params);
 	}
 
-	@GetMapping("/{id}")
+	@GetMapping("/api/schedules/{id}")
 	public Schedule get(@PathVariable Long id) {
 		return scheduleService.get(id);
 	}
 
 	// Remove? for now also map get to test easily.
-	@GetMapping({ "/schedules-statis" })
+	@GetMapping({ "/api/schedules-statis" })
 	public List<?> statisticByGet(ScheduleStatisticParams params) {
 		return statistic(params);
 	}
 
-	@PostMapping({ "/schedules-statis" })
+	@PostMapping({ "/api/schedules-statis" })
 	public List<?> statistic(@RequestBody ScheduleStatisticParams params) {
 		return scheduleService.statistic(params);
 	}
