@@ -1,13 +1,19 @@
 package com.jytec.cs.service;
 
+import static com.jytec.cs.domain.Term.COUNT_OF_WEEK_MAX;
+import static com.jytec.cs.domain.Term.COUNT_OF_WEEK_MIN;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -46,43 +52,58 @@ public class TermService {
 	@Transactional
 	public void initTermDate(short termYear, boolean autumn, Date firstWeek, int numberOfWeeks) {
 		Assert.notNull(firstWeek, "请选择一个日期将其所在周做为第一个学周！");
+		Assert.isTrue(COUNT_OF_WEEK_MIN <= numberOfWeeks && numberOfWeeks <= COUNT_OF_WEEK_MAX,
+				"周数【" + numberOfWeeks + "】超出可选范围【" + COUNT_OF_WEEK_MIN + "~" + COUNT_OF_WEEK_MAX + "】！");
 
 		Term term = autumn ? Term.ofAutumn(termYear) : Term.ofSpring(termYear); // also validated.
-		termRepository.findById(term.getId()).orElseGet(() -> termRepository.save(term));
+		termRepository.findById(term.getId()).orElseGet(() -> term);
 
 		CalenderWrapper cw = Dates.wrapper().letMondayFirst()
 				.with(new SimpleDateFormat(com.jytec.cs.domain.Date.DATE_FORMAT));
-		cw.go(firstWeek);
+		term.setFirstDay(cw.go(firstWeek).goMonday().format());
+		term.setLastDay(cw.addWeek(numberOfWeeks - 1).goSunday().format());
+		term.setCountOfWeeks((byte) numberOfWeeks);
 
-		// TODO: delete existing weeks and dates
-		// or rest
-		// week[termYear, termMonth, weekno]
-		// date[weekno]
-		// firstWeek = weekRepository.findById(fomatter.format(theMondyOfFirstWeek)).orElse(other);
+		// validate overlapped
+		List<Term> overlapped = termRepository.findOverlappedTerms(term.getId(), term.getFirstDay(), term.getLastDay());
+		if (!overlapped.isEmpty()) {
+			Iterable<?> ids = overlapped.stream()
+					.map(it -> it.getName() + "[" + it.getFirstDay() + "~" + it.getLastDay() + "]")
+					.collect(Collectors.toList());
+			throw new IllegalArgumentException("与其它学期日历重叠（可能首周或周数设置不合适）：" + Strings.join(ids, ','));
+		}
+
+		List<Week> weeks = new LinkedList<>();
+		List<com.jytec.cs.domain.Date> days = new LinkedList<>();
+
+		cw.go(firstWeek);
 		for (int i = 0; i < numberOfWeeks; i++) {
 			Week week = new Week();
 			week.setFirstDay(cw.goMonday().format());
 			week.setLastDay(cw.goSunday().format());
 			week.setWeekno((byte) (i + 1)); // 1 based.
 			week.setTerm(term);
-			weekRepository.save(week);
+			weeks.add(week);
 
 			// initialize date
-			com.jytec.cs.domain.Date day = new com.jytec.cs.domain.Date();
 			cw.goMonday();
 			for (int ii = 0; ii < 7; ii++) {
+				com.jytec.cs.domain.Date day = new com.jytec.cs.domain.Date();
 				day.setTerm(term);
 				day.setDate(cw.format());
 				day.setDayOfWeek((byte) (ii + 1)); // 1 based.
 				day.setWeekno(week.getWeekno());
 				day.setYear((short) cw.getYear());
 				day.setMonth((byte) cw.getMonth());
-				dateRepository.save(day);
+				days.add(day);
 				cw.addDay(1); // go forward one day.
 			}
 
 			// cw.addWeek(1); already go forward in day-loop
 		}
+		weekRepository.saveAll(weeks);
+		dateRepository.saveAll(days);
+		termRepository.saveAndFlush(term);
 		log.info("Count for rebuilding schedule date: " + rebuildScheduleDate(term));
 	}
 
@@ -114,7 +135,7 @@ public class TermService {
 			.orderBy("m.termId, m.weekno"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
-	
+
 	@Transactional
 	public List<com.jytec.cs.domain.Date> search(DateSearchParams params) {
 		Sql ql = new Sql().select("m").from("Date m").where() //@formatter:off
