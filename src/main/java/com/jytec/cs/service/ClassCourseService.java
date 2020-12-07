@@ -54,7 +54,7 @@ public class ClassCourseService extends CommonService{
 			.eq("m.labByTheory", params.labByTheory)
 			.eq("m.locationType", params.locationType)
 		.endWhere()
-		.orderBy("m.code"); //@formatter:on
+		.orderBy("m.name"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 
