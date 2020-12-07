@@ -84,6 +84,7 @@ public class ModelMappingHelper {
 	public void proceedSaving(){
 		deptRepository.saveAll(newDepts);
 		majorRepository.saveAll(newMajors);
+		newClasses.forEach(it->it.setDeptId(it.getMajor().getDept().getId()));
 		classRepository.saveAll(newClasses);
 		courseRepository.saveAll(newCourses);
 		teacherRepository.saveAll(newTeachers);
