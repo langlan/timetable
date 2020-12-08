@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -20,19 +21,34 @@ public interface MergingAreas {
 		return null;
 	}
 
+	/** Copy EXACTLY from {@link SheetUtil#getCell(Sheet, int, int)} */
+	static Cell getCell(Sheet sheet, int rowIx, int colIx) {
+		Row r = sheet.getRow(rowIx);
+		if (r != null) {
+			return r.getCell(colIx);
+		}
+		return null;
+	}
+
 	/**
 	 * copy and refine from {@link SheetUtil#getCellWithMerges(Sheet, int, int)}
 	 */
 	static Cell getCellWithMerges(Sheet sheet, int rowIdx, int colIdx) {
-		final Cell c = SheetUtil.getCell(sheet, rowIdx, colIdx);
-		String cellString = (c != null ? c.toString() : null);
-		if (c != null && cellString != null && !cellString.isEmpty())
-			return c;
-
-		Cell mc = getMergeCell(sheet, rowIdx, colIdx);
-		return mc != null ? mc : c;
+		final Cell cell = getCell(sheet, rowIdx, colIdx);
+		if (cell == null || cell.getCellType() == CellType.BLANK) {
+			Cell mc = getMergeCell(sheet, rowIdx, colIdx);
+			return mc;
+		}
+		return cell;
 	}
 
+	/**
+	 * try get a cell from merged-regions. return null if the given coordinates not in any merged-region.
+	 * 
+	 * @return return a merged-cell if the given coordinates in any range of merged-regions. or null.
+	 * 
+	 * @implNote extract from {@link SheetUtil#getCellWithMerges(Sheet, int, int)}
+	 */
 	static Cell getMergeCell(Sheet sheet, int rowIdx, int colIdx) {
 		for (CellRangeAddress mergedRegion : sheet.getMergedRegions()) {
 			if (mergedRegion.isInRange(rowIdx, colIdx)) {
@@ -45,10 +61,6 @@ public interface MergingAreas {
 			}
 		}
 		return null;
-	}
-
-	static Cell getCell(Sheet sheet, int rowIx, int colIx) {
-		return SheetUtil.getCell(sheet, rowIx, colIx);
 	}
 
 	// for large files.

@@ -65,7 +65,7 @@ public class Col<V, CONTEXT> {
 	 */
 	BiConsumer<Row, CONTEXT> buildRowProcessor(int colNum) {
 		Positional pos = Positional.fixed(colNum);
-		CellPicker<Cell> cellPicker = (withMerges ? pos.asCellPicker() : pos.asCellPickerWithMerges());
+		CellPicker<Cell> cellPicker = (withMerges ? pos.asCellPickerWithMerges() : pos.asCellPicker());
 		if (converter != null) {
 			return cellPicker.withConverter(converter).link(cellConsumer);
 		} else {

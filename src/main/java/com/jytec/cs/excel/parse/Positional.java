@@ -28,7 +28,7 @@ public interface Positional {
 		return row -> {
 			Cell cell = row.getCell(getPosition());
 			if (cell == null || cell.getCellType() == BLANK) {
-				return MergingAreas.getCell(row.getSheet(), row.getRowNum(), getPosition());
+				return MergingAreas.getMergeCell(row.getSheet(), row.getRowNum(), getPosition());
 			}
 			return cell;
 		};
