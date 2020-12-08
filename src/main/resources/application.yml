@@ -1,8 +1,12 @@
 server:
   address: 0.0.0.0
   # port: 8100
-
 spring:
+   http:
+      encoding:
+         charset: UTF-8
+         enabled: true
+         force: true
    datasource:
       url: jdbc:sqlite:F://timetable.db
       driverClassName: org.sqlite.JDBC
