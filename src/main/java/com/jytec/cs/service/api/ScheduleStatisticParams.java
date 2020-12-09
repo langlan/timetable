@@ -25,7 +25,7 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 		allowedGroupByProps.put("courseCate", "course.cate");
 
 		allowedCountDistinct = new HashSet<>();
-		allowedCountDistinct.addAll(Arrays.asList("classId", "courseCode", "siteId", "teacherId", "deptId"));
+		allowedCountDistinct.addAll(Arrays.asList("classId", "courseCode", "siteId", "teacherId", "majorId", "deptId"));
 
 	}
 
