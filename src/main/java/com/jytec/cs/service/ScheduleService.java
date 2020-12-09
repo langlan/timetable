@@ -34,6 +34,8 @@ public class ScheduleService extends ModelService<Schedule> {
 			.eq("m.dayOfWeek", params.dayOfWeek)
 			.eq("m.timeStart", params.timeStart)
 			.eq("m.timeEnd", params.timeEnd)
+			.eq("m.courseType", params.courseType)
+			.in("m.courseType", params.courseTypes)
 			.eq("m.trainingType", params.trainingType)
 			.in("m.trainingType", params.trainingTypes)
 			.eq("m.date", params.date)

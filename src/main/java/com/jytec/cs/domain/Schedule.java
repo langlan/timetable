@@ -14,12 +14,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.jytec.cs.domain.Term.TermAware;
 import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
-@Table(uniqueConstraints = {
-		@UniqueConstraint(columnNames = { "the_class_id", "course_code", "termId", "weekno", //
-				"dayOfWeek", "timeStart", "timeEnd" }) })
+@Table(uniqueConstraints = { @UniqueConstraint(columnNames = { "the_class_id", "course_code", "termId", "weekno", //
+		"dayOfWeek", "timeStart", "timeEnd" }) })
 @Entity
 public class Schedule extends BaseModel<Long> implements TermAware {
-	public static final String TRAININGTYPE_NON = "N";
+	public static final String COURSE_TYPE_NORMAL = "N";
+	public static final String COURSE_TYPE_TRAINING = "T";
 	public static final String TRAININGTYPE_SCHOOL = "S";
 	public static final String TRAININGTYPE_ENTERPRISE = "E";
 
@@ -48,7 +48,8 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 	private String date; // format: ref Date.date
 	private byte timeStart, timeEnd; // 起止课时
 	// Other
-	private String trainingType; // N/S/E for 非实训|校内实训|企业实训
+	private String courseType; // N/T for 普通|实训
+	private String trainingType; // S/E for 校内实训|企业实训
 
 	public long getId() {
 		return id;
@@ -136,6 +137,14 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 
 	public void setSite(Site site) {
 		this.site = site;
+	}
+
+	public String getCourseType() {
+		return courseType;
+	}
+
+	public void setCourseType(String courseType) {
+		this.courseType = courseType;
 	}
 
 	public String getTrainingType() {

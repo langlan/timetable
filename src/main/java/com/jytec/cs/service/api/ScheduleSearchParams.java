@@ -14,8 +14,8 @@ public class ScheduleSearchParams extends TermSearchParams {
 	public Long classId, teacherId;
 	public String courseCode;
 	public Integer siteId, majorId, deptId;
-	public String trainingType;
-	public String[] trainingTypes;
+	public String courseType, trainingType;
+	public String[] courseTypes, trainingTypes;
 
 	// special
 	public String yearMonth;
@@ -86,11 +86,19 @@ public class ScheduleSearchParams extends TermSearchParams {
 		this.deptId = deptId;
 	}
 
+	public void setCourseType(String courseType) {
+		if (courseType != null && courseType.contains(",")) {
+			this.courseTypes = courseType.split("\\s*,\\s*");
+		} else {
+			this.courseType = courseType;
+		}
+	}
+
 	public void setTrainingType(String trainingType) {
 		if (trainingType != null && trainingType.contains(",")) {
-			this.trainingTypes =  trainingType.split("\\s*,\\s*");
-		}else {
-			this.trainingType = trainingType;	
+			this.trainingTypes = trainingType.split("\\s*,\\s*");
+		} else {
+			this.trainingType = trainingType;
 		}
 	}
 
