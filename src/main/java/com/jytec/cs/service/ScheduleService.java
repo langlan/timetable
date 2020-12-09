@@ -62,7 +62,6 @@ public class ScheduleService extends ModelService<Schedule> {
 		Sql ql = new Sql() //@formatter:off
 		.select()
 			.____(groupByAsSelectItems)
-			.____(statParams.countDistinct("m"))
 			.____("count(*) as recordCount")                            .$(statParams.aggRecordCount)
 			.____("sum(m.timeEnd-m.timeStart+1) as lessonTime")         .$(statParams.aggLessonTime)
 			.____("sum(m.timeEnd-m.timeStart+1)/2 as lessonCount")      .$(statParams.aggLessonCount)
@@ -73,5 +72,22 @@ public class ScheduleService extends ModelService<Schedule> {
 		.groupBy(groupByClause); //@formatter:on
 
 		return dao.findMaps(ql.toString(), ql.vars());
+	}
+	
+	@Transactional
+	public Map<String, Object> statisticSummary(ScheduleStatisticParams statParams) {
+		statParams.prepareAggFields();
+		Sql ql = new Sql() //@formatter:off
+		.select()
+			.____(statParams.countDistinct("m"))
+			.____("count(*) as recordCount")                            .$(statParams.aggRecordCount)
+			.____("sum(m.timeEnd-m.timeStart+1) as lessonTime")         .$(statParams.aggLessonTime)
+			.____("sum(m.timeEnd-m.timeStart+1)/2 as lessonCount")      .$(statParams.aggLessonCount)
+		.from("Schedule m") 
+		.where() 
+			.apply(it -> applySearchParams(it, statParams))
+		.endWhere(); //@formatter:on
+
+		return dao.findUniqueMap(ql.toString(), ql.vars());
 	}
 }

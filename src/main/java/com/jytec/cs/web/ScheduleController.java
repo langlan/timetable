@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jytec.cs.domain.Schedule;
@@ -42,5 +43,11 @@ public class ScheduleController {
 	@PostMapping({ "/api/schedules-statis" })
 	public List<?> statistic(@RequestBody ScheduleStatisticParams params) {
 		return scheduleService.statistic(params);
+	}
+
+	@RequestMapping({ "/api/schedules-summary-statis" })
+	public Map<?, ?> statisticSummary(ScheduleStatisticParams params) {
+		Object ret = scheduleService.statisticSummary(params);
+		return (Map<?, ?>) ret;
 	}
 }

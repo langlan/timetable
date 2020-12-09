@@ -22,7 +22,9 @@ public interface Dao {
 
 	<T> T get(Class<T> clazz, Serializable id);
 
-	List<Map<String, Object>> findMaps(String string, Object... vars);
+	List<Map<String, Object>> findMaps(String ql, Object... vars);
+	
+	Map<String, Object> findUniqueMap(String ql, Object... vars);
 
 	<T> T save(T d);
 }

@@ -37,6 +37,16 @@ public class JpaDaoImpl implements Dao {
 		List<Map<String, Object>> list = q.getResultList();
 		return list;
 	}
+	
+	@Override
+	public Map<String, Object> findUniqueMap(String ql, Object... vars) {
+		@SuppressWarnings("deprecation")
+		Query q = prepareQuery(ql, vars).unwrap(org.hibernate.query.Query.class)
+				.setResultTransformer(AliasToEntityMapResultTransformer.INSTANCE);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> ret = (Map<String, Object>) q.getSingleResult();
+		return ret;
+	}
 
 	private Query prepareQuery(String ql, Object[] vars) {
 		// JPA style ordinal parameters (e.g. ?1)
