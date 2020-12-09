@@ -11,7 +11,7 @@ import com.jytec.cs.domain.Class;
 import com.jytec.cs.domain.Dept;
 import com.jytec.cs.domain.Major;
 import com.jytec.cs.domain.Term;
-import com.jytec.cs.excel.TrainingScheduleImporter.TitleInfo.TimeInfo;
+import com.jytec.cs.excel.TitleInfo.TimeInfo;
 
 public interface TextParser {
 	// MajorYY-No[Degree] //
@@ -217,7 +217,7 @@ public interface TextParser {
 			String line = lines[i];
 			String[] values = line.split("<>");
 			if (values.length != 4)
-				throw new IllegalArgumentException("import.excel.schedule :" + line);
+				throw new IllegalArgumentException("理论课数据格式异常（应通过<>分隔为四段）:" + line);
 			ScheduledCourse schedule = new ScheduledCourse();
 			schedule.course = values[0];
 			schedule.timeRange = parseTimeRange(values[1]);

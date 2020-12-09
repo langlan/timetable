@@ -2,15 +2,26 @@ package com.jytec.cs.excel;
 
 import static com.jytec.cs.excel.TextParser.handleLogicalEmpty;
 import static com.jytec.cs.excel.TextParser.handleMalFormedDegree;
+import static java.lang.String.valueOf;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.util.Strings;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -25,7 +36,8 @@ import com.jytec.cs.domain.Dept;
 import com.jytec.cs.domain.Major;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
-import com.jytec.cs.excel.api.ImportPreview.SheetImportPreview;
+import com.jytec.cs.excel.ModelMappingHelper.StagedCounts;
+import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
 import com.jytec.cs.excel.parse.AbstractParseResult;
 import com.jytec.cs.excel.parse.Columns;
 import com.jytec.cs.excel.parse.HeaderRowNotFountException;
@@ -59,8 +71,8 @@ public class ClassCourseImporter extends AbstractImporter {
 	@Override
 	protected void doImport(Workbook wb, ImportContext context) {
 		super.doImport(wb, context);
-		if (context.params.ignorePreview) {
-			context.modelHelper.proceedSaving();
+		if (context.params.preview) {
+			context.modelHelper.saveStaged();
 			authService.assignIdcs();
 			deptRepository.updateTypeOfNormal();
 			deptRepository.updateTypeOfElse();
@@ -69,37 +81,44 @@ public class ClassCourseImporter extends AbstractImporter {
 
 	@Override
 	protected void doImport(Sheet sheet, ImportContext context) {
-		SheetImportPreview sheetPreview = new SheetImportPreview();
-		context.preview.append(sheetPreview);
+		SheetImportReport rpt = new SheetImportReport(sheet.getSheetName());
+		context.report.append(rpt);
 
 		Row headerRow = null;
 		try {
 			headerRow = cols.findHeaderRow(sheet, 0, 2);
 		} catch (HeaderRowNotFountException e) {
-			sheetPreview.ignoredByReason(e.getMessage());
+			rpt.ignoredByReason(e.getMessage());
 			log.info(e.getMessage());
 			return;
 		}
 
 		BiConsumer<Row, ParseResult> rowProcessor = cols.buildRowProcessorByHeaderRow(headerRow);
 		Random random = new Random();
+		// StagingModels staging = context.getAttribute(StagingModels.class.getName(), StagingModels::new);
+		StagingModels staging = new StagingModels();
 		for (int rowIdx = headerRow.getRowNum() + 1; rowIdx < sheet.getLastRowNum(); rowIdx++) {
 			Row dataRow = sheet.getRow(rowIdx);
 			ParseResult r = new ParseResult();
 			rowProcessor.accept(dataRow, r);
+			r.row = dataRow;
 			r.compose(random, context.params.term);
-			r.stageIfValid(context.modelHelper);
+			staging.addIfValid(r);
 			if (!r.valid) {
-				sheetPreview.invalidRow(dataRow.getRowNum(), r.reasons);
+				rpt.logInvalidRow(dataRow.getRowNum(), r.reasons);
 			}
-			sheetPreview.increseValidRow();
+			rpt.increseTotalRow();
 		}
-		log.debug("新增系别数" + context.modelHelper.newDepts.size());
-		log.debug("新增专业数" + context.modelHelper.newMajors.size());
-		log.debug("新增班级数" + context.modelHelper.newClasses.size());
-		log.debug("新增教师数" + context.modelHelper.newTeachers.size());
-		log.debug("新增教师（无职工号）数" + context.modelHelper.newTeachersWithoutCode.size());
-		log.debug("新增班级选课数" + context.modelHelper.newClassCourses.size());
+		StagedCounts old = context.modelHelper.getStatedCounts();
+		staging.stage(context.modelHelper);
+		StagedCounts n = context.modelHelper.getStatedCounts(), c = n.delta(old);
+
+		rpt.log("新增系别数：" + c.depts + ", 共解析：" + staging.deptsIndexdByName.size());
+		rpt.log("新增专业数：" + c.majors + ", 共解析：" + staging.majorsIndexdByName.size());
+		rpt.log("新增班级数：" + c.classes + ", 共解析：" + staging.classesIndexedByName.size());
+		rpt.log("新增课程数：" + c.courses + ", 共解析：" + staging.coursesIndexedByCode.size());
+		rpt.log("新增教师数：" + c.teachers + ", 共解析：" + staging.countTeachers());
+		rpt.log("新增班级选课数：" + c.classCourses + ", 共解析：" + staging.classesIndexedByName.size());
 	}
 
 	static class ParseResult extends AbstractParseResult {
@@ -162,16 +181,61 @@ public class ClassCourseImporter extends AbstractImporter {
 			}
 		}
 
-		void stageIfValid(ModelMappingHelper mhelper) {
-			if (this.valid) {
-				dept = mhelper.findDeptByName(dept);
-				major = mhelper.findMajorByName(major, dept);
-				cls = mhelper.findClassByName(cls, major);
-				course = mhelper.findCourseByCourseCode(course);
-				teacher = mhelper.findteacherByName(teacher);
-				classCourse = mhelper.findClassCourseByClassNameAndCourseCode(classCourse, cls, course, teacher);
-				mhelper.otherTeachers(this.otherTeacherNames);
+	}
+
+	static class StagingModels {
+		List<ParseResult> rs = new LinkedList<>();
+		Map<String, List<ParseResult>> deptsIndexdByName = new HashMap<>();
+		Map<String, List<ParseResult>> majorsIndexdByName = new HashMap<>();
+		Map<String, List<ParseResult>> classesIndexedByName = new HashMap<>();
+		Map<String, List<ParseResult>> coursesIndexedByCode = new HashMap<>();
+		Map<String, List<ParseResult>> teachersIndexedByName = new HashMap<>();
+		Map<String, List<ParseResult>> classCoursesIndexedByClassNameAndCourseCode = new HashMap<>();
+		Set<String> namesOfTeacherWithoutCode = new HashSet<>();
+
+		public void addIfValid(ParseResult r) {
+			if (r.valid)
+				rs.add(r);
+		}
+
+		public void stage(ModelMappingHelper mhelper) {
+			classCoursesIndexedByClassNameAndCourseCode = rs.stream()
+					.collect(groupingBy(it -> it.classNameWithDegree + "-" + it.courseCode));
+			Map<String, List<ParseResult>> duplicatedCC = classCoursesIndexedByClassNameAndCourseCode.entrySet()
+					.stream().filter(it -> it.getValue().size() > 1)
+					.collect(Collectors.toMap(it -> it.getKey(), it -> it.getValue()));
+			if (duplicatedCC.size() > 0) {
+				StringBuilder sb = new StringBuilder("存在重复选课数据：").append("\r\n");
+				for (Entry<String, List<ParseResult>> e : duplicatedCC.entrySet()) {
+					List<String> rrr = e.getValue().stream() //
+							.map(it -> valueOf(it.row.getRowNum() + 1)).collect(toList());
+					sb.append(e.getKey()).append(" - ");
+					sb.append(Strings.join(rrr, ','));
+				}
+				throw new IllegalArgumentException(sb.toString());
 			}
+			deptsIndexdByName = rs.stream().collect(groupingBy(r -> r.deptName));
+			majorsIndexdByName = rs.stream().collect(groupingBy(r -> r.majorNameWithDegree));
+			classesIndexedByName = rs.stream().collect(groupingBy(r -> r.classNameWithDegree));
+			coursesIndexedByCode = rs.stream().collect(groupingBy(r -> r.courseCode));
+			teachersIndexedByName = rs.stream().collect(groupingBy(r -> r.teacher.getName()));
+			rs.forEach(r -> {
+				namesOfTeacherWithoutCode.addAll(r.otherTeacherNames);
+				r.dept = mhelper.findDeptOrStageByName(r.dept);
+				r.major = mhelper.findMajorOrStageByName(r.major, r.dept);
+				r.cls = mhelper.findClassOrStageByName(r.cls, r.major);
+				r.course = mhelper.findCourseOrStageByCourseCode(r.course);
+				r.teacher = mhelper.findteacherOrStageByName(r.teacher);
+				r.classCourse = mhelper.findClassCourseOrStageByClassNameAndCourseCode(r.classCourse, r.cls, r.course,
+						r.teacher);
+			});
+			namesOfTeacherWithoutCode = namesOfTeacherWithoutCode.stream()
+					.filter(t -> teachersIndexedByName.get(t) != null).collect(Collectors.toSet());
+			mhelper.stageTeachersWithoutCodeIfAbsent(namesOfTeacherWithoutCode);
+		}
+		
+		public int countTeachers() {
+			return teachersIndexedByName.size() + namesOfTeacherWithoutCode.size();
 		}
 
 	}

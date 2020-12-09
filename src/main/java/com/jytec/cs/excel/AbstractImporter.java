@@ -16,26 +16,33 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.Assert;
 
 import com.jytec.cs.excel.api.ImportParams;
+import com.jytec.cs.excel.api.ImportReport;
 
 public abstract class AbstractImporter implements ApplicationContextAware {
 	protected static Log log = LogFactory.getLog(AbstractImporter.class.getPackage().getName());
 	protected ApplicationContext applicationContext;
 
+	/**
+	 * Prepare context.
+	 * @param params
+	 * @throws EncryptedDocumentException
+	 * @throws IOException
+	 */
 	@Transactional
-	public void importFile(ImportParams params) throws EncryptedDocumentException, IOException {
+	public ImportReport importFile(ImportParams params) throws EncryptedDocumentException, IOException {
 		Assert.notNull(params.file, "未指定导入文件。");
 		Assert.isTrue(params.file.exists(), "文件不存在！" + params.file.getAbsolutePath());
 
+		ImportContext context = new ImportContext();
 		log.debug("准备处理文件：" + params.file.getAbsolutePath());
 		try (Workbook wb = WorkbookFactory.create(params.file, null, true)) {
-			ImportContext context = new ImportContext();
 			context.params = params;
 			context.modelHelper = getModelHelper(params);
 
 			doImport(wb, context);
 		}
 		log.debug("文件处理结束：" + params.file.getAbsolutePath());
-
+		return context.report;
 	}
 
 	/**
@@ -46,7 +53,9 @@ public abstract class AbstractImporter implements ApplicationContextAware {
 	protected void doImport(Workbook wb, ImportContext context) {
 		for (int i = 0; i < wb.getNumberOfSheets(); i++) {
 			Sheet sheet = wb.getSheetAt(i);
-			doImport(sheet, context);
+			if (sheet.getLastRowNum() > 0) {
+				doImport(sheet, context);	
+			}
 		}
 	}
 

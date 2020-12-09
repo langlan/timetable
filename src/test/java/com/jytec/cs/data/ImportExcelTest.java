@@ -13,6 +13,7 @@ import com.jytec.cs.excel.ScheduleImporter;
 import com.jytec.cs.excel.SiteImporter;
 import com.jytec.cs.excel.TrainingScheduleImporter;
 import com.jytec.cs.excel.api.ImportParams;
+import com.jytec.cs.excel.api.ImportReport;
 
 @SpringBootTest
 public class ImportExcelTest {
@@ -27,8 +28,9 @@ public class ImportExcelTest {
 	public void testImport00ClassCourses() throws EncryptedDocumentException, IOException {
 		File file = new File("C:/Users/langlan/Desktop/课表/basic-class-course.xls");
 		ImportParams params = ImportParams.create().file(file).term(TermSerivcelTest.TERM);
+		ImportReport report = classCourseImporter.importFile(params.preview());
+		System.out.println(report);
 		// classCourseImporter.importFile(params);
-		classCourseImporter.importFile(params.ignorePreview());
 	}
 
 	@Test
@@ -40,15 +42,17 @@ public class ImportExcelTest {
 	@Test
 	public void testImport01ScheduleOfTheoryCourse() throws EncryptedDocumentException, IOException {
 		File file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-1.xlsx");
-		scheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
+		ImportParams params = ImportParams.create().term(TermSerivcelTest.TERM).classYear(19);
+		scheduleImporter.importFile(params.file(file));
 		file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-2.xlsx");
-		scheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
+		scheduleImporter.importFile(params.file(file));
 	}
 
 	@Test
 	public void testImport02ScheduleOfTrainingCourse() throws EncryptedDocumentException, IOException {
+		ImportParams params = ImportParams.create().term(TermSerivcelTest.TERM).classYear(19);
 		File file = new File("C:/Users/langlan/Desktop/课表/schedule-training-1.xlsx");
-		trainingScheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
+		trainingScheduleImporter.importFile(params.file(file));
 		// file = new File("C:/Users/langlan/Desktop/课表/schedule-theory-2.xlsx");
 		// scheduleImporter.importFile(TermSerivcelTest.TERM, 19, file);
 	}

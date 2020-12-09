@@ -43,25 +43,31 @@ public class AutoCreateService {
 
 	/** used when data-appeared-incompletely in importing resources. */
 	public Teacher findTeacherByNameOrCreateWithAutoCode(String name) {
-		return teacherRepository.findByName(name).orElseGet(() -> this.createTeacherWithAutoCode(name));
+		return teacherRepository.findByName(name).orElseGet(() -> this.createTeacherWithAutoCode(name, true));
 	}
 
-	public Teacher createTeacherWithAutoCode(String name) {
+	public Teacher createTeacherWithAutoCode(String name, boolean save) {
 		Teacher teacher = new Teacher();
 		teacher.setName(name);
 		teacher = teacherRepository.save(teacher);
 		teacher.setCode("T" + teacher.getId()); // code strategy.
 		log.info("自动创建教师【" + name + "】－code【" + teacher.getCode() + "】");
-		return teacherRepository.save(teacher);
+		if(save) {
+			return teacherRepository.save(teacher);
+		}
+		return teacher;
 	}
 
-	public Site createSiteWithAutoCode(String name) {
+	public Site createSiteWithAutoCode(String name, boolean save) {
 		Site site = new Site();
 		site.setName(name);
 		site = siteRepository.save(site);
 		site.setCode("T" + site.getId()); // code strategy.
 		log.info("自动创建场地【" + name + "】－code【" + site.getCode() + "】");
-		return siteRepository.save(site);
+		if(save) {
+			return siteRepository.save(site);	
+		}
+		return site;
 	}
 
 }

@@ -34,10 +34,21 @@ public interface Texts {
 		return text.trim();
 	}
 
-	/** Concatenate all cell strings */
+	/** Concatenate all cell strings without delimiter, always return a not null string */
 	static String rowString(Row row) {
+		return rowString(row, null);
+	}
+
+	/** Concatenate all cell strings, always return a not null string */
+	static String rowString(Row row, String delimiter) {
+		if (row == null) {
+			return "";
+		}
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < row.getLastCellNum(); i++) {
+			if (sb.length() > 0 && delimiter != null) {
+				sb.append(delimiter);
+			}
 			sb.append(cellString(row.getCell(i)));
 		}
 		return sb.toString();

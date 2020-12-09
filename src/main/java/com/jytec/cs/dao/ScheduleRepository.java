@@ -11,15 +11,18 @@ import com.jytec.cs.service.TermService;
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
 	@Query("Select count(*) From Schedule s Where " //
-			+ "s.termId=?3 And " //
-			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType='" + Schedule.TRAININGTYPE_NON + "'")
-	int countNonTrainingByClassAndTerm(String className, String classDegree, String termId);
+			+ "s.termId=?2 And " //
+			+ "s.theClass.name=?1 And " //
+			// + "s.theClass.degree=?2 And " //
+			+ "s.courseType='" + Schedule.COURSE_TYPE_NORMAL + "'")
+	int countNonTrainingByClassAndTerm(String className, /* String classDegree, */String termId);
 
 	@Query("Select count(*) From Schedule s Where " //
-			+ "s.termId=?3 And " //
-			+ "s.theClass.name=?1 and s.theClass.degree=?2 And " + "s.trainingType<>'" + Schedule.TRAININGTYPE_NON
-			+ "' And " + "s.weekno between ?4 And ?5")
-	int countTrainingByClassAndTermAndWeek(String name, String degree, String termId, byte weeknoStart, byte weeknoEnd);
+			+ "s.termId=?2 And " //
+			+ "s.theClass.name=?1 And " //
+			// + "s.theClass.degree=?2 And " //
+			+ "s.courseType='" + Schedule.COURSE_TYPE_TRAINING + "' And " + "s.weekno between ?3 And ?4")
+	int countTrainingByClassAndTermAndWeek(String name, String termId, byte weeknoStart, byte weeknoEnd);
 
 	/**
 	 * use when rebuild/init term data, or after import schedule data.

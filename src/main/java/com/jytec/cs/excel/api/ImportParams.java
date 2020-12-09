@@ -16,7 +16,7 @@ public class ImportParams {
 	public Term term;
 	/** for:[schedule/training-schedule] */
 	public int classYear;
-	public boolean ignorePreview;
+	public boolean preview;
 
 	public void validate() {
 
@@ -41,8 +41,8 @@ public class ImportParams {
 		return new ImportParams();
 	}
 
-	public ImportParams ignorePreview() {
-		this.ignorePreview = true;
+	public ImportParams preview() {
+		this.preview = true;
 		return this;
 	}
 
