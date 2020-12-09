@@ -6,7 +6,7 @@ import java.util.Map;
 public class ScheduleStatisticParams extends ScheduleSearchParams {
 	private static final Map<String, String> allowedGroupByProps;
 	static {
-		String props = "termYear,termMonth,weekno,dayOfWeek,date,timeStart,timeEnd,trainingType";
+		String props = "termId,weekno,dayOfWeek,date,timeStart,timeEnd,courseType,trainingType";
 		allowedGroupByProps = new HashMap<>();
 		for (String prop : props.split(",")) {
 			allowedGroupByProps.put(prop, prop);
