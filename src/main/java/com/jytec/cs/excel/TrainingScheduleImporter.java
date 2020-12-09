@@ -3,6 +3,8 @@ package com.jytec.cs.excel;
 import static com.jytec.cs.excel.parse.Texts.atLocaton;
 import static com.jytec.cs.excel.parse.Texts.cellString;
 
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.ss.usermodel.Cell;
@@ -55,8 +57,8 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 
 			totalRow++;
 			log.debug("# 解析班级：【" + classesName + "】" + atLocaton(row));
-
 			Class[] pcs = TextParser.parseClasses(classesName, defaultDegree);
+			OverlappingChecker overlappingChecker = context.getAttribute(OverlappingChecker.class.getName(), OverlappingChecker::new);
 			for (Class pc : pcs) {
 				String classNameWithDegree = pc.getName() /* + "[" + pc.getDegree() + "]" */;
 
@@ -91,12 +93,13 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 					}
 
 					// deal with parsed schedule
-					ParseResult r = generateParseResult(classNameWithDegree, scs, scheduledCell, timeInfo, term, mhelper);
-					r.schedules.forEach(it->{
+					List<Schedule> schedules = generateParseResult(classNameWithDegree, scs, scheduledCell, timeInfo, term, mhelper);
+					schedules.forEach(it->{
 						it.setCourseType(Schedule.COURSE_TYPE_TRAINING);
 						it.setTrainingType(Schedule.TRAININGTYPE_SCHOOL);
 					});
-					mhelper.stageAll(r.schedules);
+					overlappingChecker.addAll(schedules, scheduledCell);
+					mhelper.stageAll(schedules);
 					rowImported = true;
 				} // end of each schedule-cell
 			} // end of each class
