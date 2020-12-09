@@ -1,10 +1,14 @@
 package com.jytec.cs.service.api;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class ScheduleStatisticParams extends ScheduleSearchParams {
 	private static final Map<String, String> allowedGroupByProps;
+	private static final Set<String> allowedCountDistinct;
 	static {
 		String props = "termId,weekno,dayOfWeek,date,timeStart,timeEnd,courseType,trainingType";
 		allowedGroupByProps = new HashMap<>();
@@ -20,10 +24,14 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 		allowedGroupByProps.put("classYear", "theClass.year");
 		allowedGroupByProps.put("courseCate", "course.cate");
 
+		allowedCountDistinct = new HashSet<>();
+		allowedCountDistinct.addAll(Arrays.asList("classId", "courseCode", "siteId", "teacherId", "deptId"));
+
 	}
 
 	private String aggFields; // aggregate group name
 	private String groupBy;
+	private String distinct;
 	/** sum(timeEnd-timeStart+1) as lessonTime */
 	public boolean aggLessonTime;
 	/** sum(timeEnd-timeStart+1)/2 as lessonCount */
@@ -45,6 +53,10 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 
 	public void setAggFields(String aggFields) {
 		this.aggFields = aggFields;
+	}
+
+	public void setDistinct(String distinct) {
+		this.distinct = distinct;
 	}
 
 	public ScheduleStatisticParams prepareAggFields() {
@@ -115,6 +127,31 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 						sb.append(" as ");
 						sb.append(prop);
 					}
+				}
+			}
+			return sb.toString();
+		}
+		return "";
+	}
+
+	public String countDistinct(String rootAlias) {
+		if (distinct != null) {
+			StringBuilder sb = new StringBuilder();
+			String[] props = distinct.split(",");
+			for (String prop : props) {
+				String realProp = allowedGroupByProps.get(prop.trim());
+				if (allowedCountDistinct.contains(prop) && realProp != null) {
+					if (sb.length() > 0) {
+						sb.append(",");
+					}
+					sb.append("Count(DISTINCT ");
+					sb.append(rootAlias);
+					sb.append(".");
+					sb.append(realProp);
+					sb.append(")");
+					sb.append(" as ");
+					sb.append(prop);
+					sb.append("Count");
 				}
 			}
 			return sb.toString();

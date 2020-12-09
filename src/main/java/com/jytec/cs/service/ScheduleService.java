@@ -62,6 +62,7 @@ public class ScheduleService extends ModelService<Schedule> {
 		Sql ql = new Sql() //@formatter:off
 		.select()
 			.____(groupByAsSelectItems)
+			.____(statParams.countDistinct("m"))
 			.____("count(*) as recordCount")                            .$(statParams.aggRecordCount)
 			.____("sum(m.timeEnd-m.timeStart+1) as lessonTime")         .$(statParams.aggLessonTime)
 			.____("sum(m.timeEnd-m.timeStart+1)/2 as lessonCount")      .$(statParams.aggLessonCount)
