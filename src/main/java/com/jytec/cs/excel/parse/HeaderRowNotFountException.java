@@ -10,6 +10,10 @@ public class HeaderRowNotFountException extends IllegalArgumentException {
 	private static final long serialVersionUID = 1L;
 	private Row mostLikeRow;
 	private String[] unmatchedHeaderPatterns;
+	
+	public HeaderRowNotFountException(String msg, Sheet sheet) {
+		super(msg + " - " + Messages.format("header-row-not-found", sheet.getSheetName()));
+	}
 
 	public HeaderRowNotFountException(Sheet sheet) {
 		super(Messages.format("header-row-not-found", sheet.getSheetName()));

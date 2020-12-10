@@ -5,18 +5,16 @@ import java.io.File;
 import com.jytec.cs.domain.Term;
 
 public class ImportParams {
-	/**
-	 * use to dispatch importer <p>
-	 * 
-	 * class-course, sites, schedule, training-schedule
-	 * 
-	 */
-	public String template;
 	public File file;
 	public Term term;
+	/** not commit saving */
+	public boolean preview;
 	/** for:[schedule/training-schedule] */
 	public int classYear;
-	public boolean preview;
+	/** for:[schedule/training-schedule] */
+	public boolean suppressClassCourseNotFoundError;
+	public boolean suppressTeacherNotFoundException;
+	public boolean suppressTeacherNotMatchException;
 
 	public void validate() {
 
@@ -34,6 +32,11 @@ public class ImportParams {
 	
 	public ImportParams classYear(int classYear) {
 		this.classYear = classYear;
+		return this;
+	}
+	
+	public ImportParams suppressClassCourseNotFoundError() {
+		this.suppressClassCourseNotFoundError = true;
 		return this;
 	}
 

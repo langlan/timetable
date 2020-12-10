@@ -66,6 +66,11 @@ public interface Texts {
 		return Messages.format("at-cell", cell.getSheet().getSheetName(), cell.getAddress());
 	}
 
+	static String atLocaton(Cell cell, boolean withSheetInfo) {
+		return withSheetInfo ? Messages.format("at-cell", cell.getSheet().getSheetName(), cell.getAddress())
+				: Messages.format("at-cell-without-sheet", cell.getAddress());
+	}
+
 	static String atLocaton(Sheet sheet) {
 		return Messages.format("at-sheet", sheet.getSheetName());
 	}

@@ -81,7 +81,7 @@ public class Col<V, CONTEXT> {
 		if (cell != null) {
 			return cell.getColumnIndex();
 		} else if (!this.optional) {
-			throw new IllegalStateException("Could not find the column：" + headerPattern);
+			throw new HeaderRowNotFountException("Could not find the column：" + headerPattern, headerRow.getSheet());
 		}
 		return -1;
 	}

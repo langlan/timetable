@@ -8,9 +8,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.util.Strings;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -28,46 +29,82 @@ import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.TextParser.ScheduledCourse;
 import com.jytec.cs.excel.TextParser.TimeRange;
 import com.jytec.cs.excel.TitleInfo.TimeInfo;
+import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
+import com.jytec.cs.excel.exceptions.ClassCourseNotFountException;
 import com.jytec.cs.service.AuthService;
 
 @Service
 public class ScheduleImporter extends AbstractImporter {
-	private final Log log = LogFactory.getLog(ScheduleImporter.class);
 	protected @Autowired ScheduleRepository scheduleRespository;
 	private @Autowired AuthService authService;
+	protected int defaultHeaderRowIndex = 1;
 
 	@Override
 	protected void doImport(Workbook wb, ImportContext context) {
+		Assert.notNull(context.params.term, "参数学期不可为空！");
+		Assert.isTrue(context.params.classYear > 0, "参数年级不可为空！");
+
 		super.doImport(wb, context);
 		if (!context.params.preview) {
 			context.modelHelper.saveStaged();
-			authService.assignIdcs();
+			authService.assignIdcs(); // for auto-created teachers
 			scheduleRespository.updateDateByTerm(context.params.term.getId());
 		}
 	}
 
 	@Override
+	protected void after(Sheet sheet, ImportContext context) {
+		super.after(sheet, context);
+		Map<String, Set<Cell>> cce = context.modelHelper.classCourseNotFountExceptions;
+		Map<String, Set<Cell>> tnm = context.modelHelper.teacherNotMatchExceptions;
+		Map<String, Set<Cell>> tnf = context.modelHelper.teacherNotFoundExceptions;
+		Map<String, Set<Cell>> snf = context.modelHelper.siteNotFoundExceptions;
+		SheetImportReport rpt = context.report;
+		cce.forEach((k, v) -> rpt.log("无法找到班级排课记录 - " + k + "－"
+				+ Strings.join(v.stream().map(it -> it.getAddress().toString()).collect(Collectors.toList()), ',')));
+		tnm.forEach((k, v) -> rpt.log("教师与班级选课教师不匹配 - " + k + "－"
+				+ Strings.join(v.stream().map(it -> it.getAddress().toString()).collect(Collectors.toList()), ',')));
+		tnf.forEach((k, v) -> rpt.log("找不到教师记录 - " + k + "－"
+				+ Strings.join(v.stream().map(it -> it.getAddress().toString()).collect(Collectors.toList()), ',')));
+		snf.forEach((k, v) -> rpt.log("找不到上课场所记录 - " + k + "－"
+				+ Strings.join(v.stream().map(it -> it.getAddress().toString()).collect(Collectors.toList()), ',')));
+		cce.clear();
+		tnm.clear();
+		tnf.clear();
+		snf.clear();
+		if (context.params.suppressClassCourseNotFoundError) {
+			context.modelHelper.hasAnyClassCourseNotFountExceptions = false;
+		}
+		if (context.params.suppressTeacherNotMatchException) {
+			context.modelHelper.hasAnyTeacherNotMatchExceptions = false;
+		}
+		if (context.params.suppressTeacherNotFoundException) {
+			context.modelHelper.hasAnyTeacherNotFoundExceptions = false;
+		}
+		if (context.params.suppressTeacherNotFoundException) {
+			context.modelHelper.hasAnySiteNotFoundExceptions = false;
+		}
+	}
+
+	@Override
 	protected void doImport(Sheet sheet, ImportContext context) {
+		SheetImportReport rpt = context.report;
 		Term term = context.params.term;
 		int classYear = context.params.classYear;
-		Assert.notNull(term, "参数学期不可为空！");
-		Assert.notNull(classYear, "参数年级不可为空！");
-		int headerRowIndex = 1, dataFirstRowIndex = headerRowIndex + 1;
 
 		TitleInfo.searchAndValidateTerm(sheet, term);
-		TitleInfo titleInfo = TitleInfo.search(sheet, 1);
+		TitleInfo titleInfo = TitleInfo.search(sheet, defaultHeaderRowIndex);
 		// TitleInfo titleInfo = TitleInfo.create(sheet, headerRowIndex);
-		int classColIndex = titleInfo.classColIndex;
+		int dataFirstRowIndex = titleInfo.getFollowingDataRowIndex();
 		String classYearFilter = Integer.toString(classYear % 2000);
-		int importedRows = 0, totalRow = 0;
 
-		OverlappingChecker overlappingChecker = context.getAttribute(OverlappingChecker.class.getName(), OverlappingChecker::new);
+		OverlappingChecker overlappingChecker = context.getAttribute(OverlappingChecker.class.getName(),
+				OverlappingChecker::new);
 		for (int rowIndex = dataFirstRowIndex; rowIndex < sheet.getLastRowNum(); rowIndex++) {
 			Row dataRow = sheet.getRow(rowIndex);
-			Cell cell = dataRow.getCell(classColIndex);
-			totalRow++;
+			Cell classCell = dataRow.getCell(titleInfo.classColIndex);
 			// parse class
-			String classNameWithDegree = TextParser.handleMalFormedDegree(cellString(cell));
+			String classNameWithDegree = TextParser.handleMalFormedDegree(cellString(classCell));
 			if (classNameWithDegree.isEmpty()) {
 				log.info("忽略无效数据行：班级列为空" + atLocaton(dataRow));
 				continue;
@@ -76,7 +113,7 @@ public class ScheduleImporter extends AbstractImporter {
 				log.info("忽略班级（非指定年级）：【" + classNameWithDegree + "】" + atLocaton(dataRow));
 				continue;
 			}
-
+			rpt.rowsTotal++;
 //			Class pc = TextParser.parseClass(classNameWithDegree);
 //			if (scheduleRespository.countNonTrainingByClassAndTerm(pc.getName(), term.getId()) > 0) {
 //				log.info("忽略班级（已有理论课排课记录）：【" + classNameWithDegree + "】" + atLocaton(dataRow));
@@ -84,7 +121,8 @@ public class ScheduleImporter extends AbstractImporter {
 //			}
 			ModelMappingHelper mhelper = context.modelHelper;
 
-			boolean importedAnyRow = false;
+			// loop each cell in data-row
+			boolean importedAnyCell = false;
 			for (int colIndex = 0; colIndex < dataRow.getLastCellNum(); colIndex++) {
 				Cell scheduledCell = dataRow.getCell(colIndex);
 				TimeInfo timeInfo;
@@ -102,14 +140,17 @@ public class ScheduleImporter extends AbstractImporter {
 				} catch (Exception e) {
 					throw new IllegalStateException("课表数据格式有误【" + scheduleText + "】" + atLocaton(scheduledCell));
 				}
-				List<Schedule> schedules = generateParseResult(classNameWithDegree, scs, scheduledCell, timeInfo, term, mhelper);
+				List<Schedule> schedules = generateParseResult(classNameWithDegree, scs, scheduledCell, timeInfo, term,
+						mhelper);
 				overlappingChecker.addAll(schedules, scheduledCell);
-				importedAnyRow = !schedules.isEmpty();
+				importedAnyCell = !schedules.isEmpty();
 				mhelper.stageAll(schedules);
 			}
-			importedRows = importedRows + (importedAnyRow ? 1 : 0);
+			if (importedAnyCell) {
+				rpt.rowsReady++;
+			}
 		}
-		log.info("成功导入【" + importedRows + "/" + totalRow + "】行，@【" + sheet.getSheetName() + "】");
+		log.info("准备导入【" + rpt.rowsReady + "/" + rpt.rowsTotal + "】行，@【" + sheet.getSheetName() + "】");
 		// Should it be called through other UI to keep data-import and date-build independent.
 	}
 
@@ -121,7 +162,14 @@ public class ScheduleImporter extends AbstractImporter {
 			TimeRange times = sc.timeRange;
 			byte weeknoStart = times.weeknoStart, weeknoEnd = times.weeknoEnd;
 			byte timeStart = times.timeStart, timeEnd = times.timeEnd;
-			ClassCourse classCourse = mhelper.findClassCourse(classNameWithDegree, sc.course, scheduledCell);
+			ClassCourse classCourse = null;
+			try {
+				classCourse = mhelper.findClassCourse(classNameWithDegree, sc.course, scheduledCell);
+			} catch (ClassCourseNotFountException e) {
+				// see #after & ModelMappingHelper#classCourseNotFountExceptions
+				log.info("忽略班级选课（无法找到班级选课记录）" + classNameWithDegree + "-" + sc.course);
+				continue;
+			}
 			Teacher teacher = mhelper.findTeacher(sc.teacher, classCourse, scheduledCell);
 			Site site = mhelper.findSite(sc.site, scheduledCell);
 
@@ -162,6 +210,15 @@ public class ScheduleImporter extends AbstractImporter {
 			}
 		}
 		return schedules;
+	}
+
+	protected boolean acceptRow(ImportContext context, RowParseContext rowContext) {
+
+		return true;
+	}
+
+	static class RowParseContext {
+
 	}
 
 	/** For overlapping check. */

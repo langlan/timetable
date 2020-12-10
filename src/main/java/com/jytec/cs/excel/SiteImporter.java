@@ -6,21 +6,14 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import javax.transaction.Transactional;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,10 +21,12 @@ import com.jytec.cs.dao.DeptRepository;
 import com.jytec.cs.dao.SiteRepository;
 import com.jytec.cs.domain.Dept;
 import com.jytec.cs.domain.Site;
+import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
 import com.jytec.cs.excel.parse.Columns;
+import com.jytec.cs.excel.parse.HeaderRowNotFountException;
 
 @Service
-public class SiteImporter {
+public class SiteImporter extends AbstractImporter {
 	private static final Log log = LogFactory.getLog(SiteImporter.class);
 	private @Autowired SiteRepository siteRepository;
 	private @Autowired DeptRepository deptRepository;
@@ -47,29 +42,16 @@ public class SiteImporter {
 		cols.scol("校内实训基地名称", (it, m) -> m.setName4Training(it)).optional().withMerges();
 	}
 
-	@Transactional
-	public void importFile(File file) throws EncryptedDocumentException, IOException {
-		Workbook wb = WorkbookFactory.create(file, null, true);
-		doImport(wb);
-		wb.close();
-		deptRepository.updateTypeOfElse();
-	}
-
-	protected void doImport(Workbook wb) {
-		// assertEquals(1, wb.getNumberOfSheets());
-		int start = 0, end = 6;
-		for (int i = start; i <= end; i++) {
-			Sheet sheet = wb.getSheetAt(i);
-			doImport(sheet);
-		}
-	}
-
-	protected void doImport(Sheet sheet) {
+	@Override
+	protected void doImport(Sheet sheet, ImportContext context) {
+		SheetImportReport rpt = context.report;
 		int headerRowIndex = 1, dataFirstRowIndex = 2;
 		Row headerRow = sheet.getRow(headerRowIndex);
-		BiConsumer<Row, Site> rowParser = cols.buildRowProcessorByHeaderRow(headerRow);
-
-		if (rowParser == null) {
+		BiConsumer<Row, Site> rowParser;
+		try {
+			rowParser = cols.buildRowProcessorByHeaderRow(headerRow);
+		} catch (HeaderRowNotFountException e) {
+			rpt.ignoredByReason("无法识别表头，疑似非数据表格 －" + e.getMessage());
 			log.warn("Ignore sheet :" + sheet.getSheetName());
 			return;
 		}
@@ -78,16 +60,15 @@ public class SiteImporter {
 		Iterable<Site> allSites = siteRepository.findAll();
 		// List<String[]> _keys = siteRepository.findAllLogicKeys(); // name + type
 		// Set<String> siteKeys = _keys.parallelStream().map(it -> join("", it)).collect(toSet());
-		Set<String> siteKeys = stream(allSites.spliterator(), false).map(it -> it.getName() + it.getRoomType())
+		Set<String> siteKeys = stream(allSites.spliterator(), false).map(it -> it.getName() + "-" + it.getRoomType())
 				.collect(toSet());
-		Map<String, Site> indexedAutoSites = stream(allSites.spliterator(), false)
+		Map<String, Site> autoSitesIndexedByName = stream(allSites.spliterator(), false)
 				.filter(it -> it.getCode() != null && it.getCode().startsWith("T"))
 				.collect(toMap(Site::getName, it -> it));
 
 		Map<String, Dept> depts = stream(deptRepository.findAll().spliterator(), false)
 				.collect(toMap(it -> it.getName(), it -> it));
 
-		int imported = 0, total = 0;
 		Dept mainDept = null; // for save short name.
 		boolean mainDeptAllMatch = true;
 
@@ -109,13 +90,13 @@ public class SiteImporter {
 			}
 
 			if (!site.getName().isEmpty() && !site.getRoomType().isEmpty()) { // not from empty row.
-				total++;
-				String key = site.getName() + site.getRoomType();
+				rpt.rowsTotal++;
+				String key = site.getName() + "-" + site.getRoomType();
 				if (siteKeys.add(key)) { // check existence.
-					imported++;
-					log.info("imported new site: " + key);
+					rpt.rowsReady++;
+					log.info(rpt.log("新增: " + key));
 					// use remove not get, to compatible with same-name records.
-					Site exist = indexedAutoSites.remove(site.getName());
+					Site exist = autoSitesIndexedByName.remove(site.getName());
 					if (exist != null) {
 						exist.setDept(site.getDept());
 						exist.setCode(site.getCode());
@@ -129,7 +110,7 @@ public class SiteImporter {
 					}
 					siteRepository.save(site);
 				} else {
-					log.info("Ignore exist site: " + key);
+					log.info(rpt.log("忽略已存在: " + key));
 				}
 				if (i == dataFirstRowIndex) { // first row;
 					mainDept = site.getDept();
@@ -139,10 +120,11 @@ public class SiteImporter {
 			}
 		}
 		// TODO: handle merging areas.
-		log.info("Sheet[" + sheet.getSheetName() + "] 导入数据【" + imported + "/" + total + "】条");
-		if (mainDept != null && mainDeptAllMatch && total > 10 && mainDept.getShortName() == null) {
+		log.info("Sheet[" + sheet.getSheetName() + "] 导入数据【" + rpt.rowsReady + "/" + rpt.rowsTotal + "】条");
+		if (mainDept != null && mainDeptAllMatch && rpt.rowsTotal > 10 && mainDept.getShortName() == null) {
 			mainDept.setShortName(sheet.getSheetName());
 		}
 
 	}
+
 }

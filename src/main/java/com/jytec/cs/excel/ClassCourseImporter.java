@@ -19,8 +19,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.logging.log4j.util.Strings;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -46,7 +44,6 @@ import com.jytec.cs.service.AuthService;
 /** dept, major, teacher, class, course, class-course */
 @Service
 public class ClassCourseImporter extends AbstractImporter {
-	private static final Log log = LogFactory.getLog(ClassCourseImporter.class);
 	private @Autowired DeptRepository deptRepository;
 	private @Autowired AuthService authService;
 	private Columns<ParseResult> cols = new Columns<>();
@@ -81,8 +78,7 @@ public class ClassCourseImporter extends AbstractImporter {
 
 	@Override
 	protected void doImport(Sheet sheet, ImportContext context) {
-		SheetImportReport rpt = new SheetImportReport(sheet.getSheetName());
-		context.report.append(rpt);
+		SheetImportReport rpt = context.report;
 
 		Row headerRow = null;
 		try {
@@ -113,12 +109,12 @@ public class ClassCourseImporter extends AbstractImporter {
 		staging.stage(context.modelHelper);
 		StagedCounts n = context.modelHelper.getStatedCounts(), c = n.delta(old);
 
-		rpt.log("新增系别数：" + c.depts + ", 共解析：" + staging.deptsIndexdByName.size());
-		rpt.log("新增专业数：" + c.majors + ", 共解析：" + staging.majorsIndexdByName.size());
-		rpt.log("新增班级数：" + c.classes + ", 共解析：" + staging.classesIndexedByName.size());
-		rpt.log("新增课程数：" + c.courses + ", 共解析：" + staging.coursesIndexedByCode.size());
-		rpt.log("新增教师数：" + c.teachers + ", 共解析：" + staging.countTeachers());
-		rpt.log("新增班级选课数：" + c.classCourses + ", 共解析：" + staging.classesIndexedByName.size());
+		log.info(rpt.log("新增系别数：" + c.depts + ", 共解析：" + staging.deptsIndexdByName.size()));
+		log.info(rpt.log("新增专业数：" + c.majors + ", 共解析：" + staging.majorsIndexdByName.size()));
+		log.info(rpt.log("新增班级数：" + c.classes + ", 共解析：" + staging.classesIndexedByName.size()));
+		log.info(rpt.log("新增课程数：" + c.courses + ", 共解析：" + staging.coursesIndexedByCode.size()));
+		log.info(rpt.log("新增教师数：" + c.teachers + ", 共解析：" + staging.countTeachers()));
+		log.info(rpt.log("新增班级选课数：" + c.classCourses + ", 共解析：" + staging.classesIndexedByName.size()));
 	}
 
 	static class ParseResult extends AbstractParseResult {
@@ -233,7 +229,7 @@ public class ClassCourseImporter extends AbstractImporter {
 					.filter(t -> teachersIndexedByName.get(t) != null).collect(Collectors.toSet());
 			mhelper.stageTeachersWithoutCodeIfAbsent(namesOfTeacherWithoutCode);
 		}
-		
+
 		public int countTeachers() {
 			return teachersIndexedByName.size() + namesOfTeacherWithoutCode.size();
 		}

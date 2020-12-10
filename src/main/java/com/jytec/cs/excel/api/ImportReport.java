@@ -13,15 +13,30 @@ import org.apache.logging.log4j.util.Strings;
 public class ImportReport {
 	List<SheetImportReport> sheets = new LinkedList<>();
 
-	public void append(SheetImportReport sheetImportPreview) {
-		sheets.add(sheetImportPreview);
+	public void append(SheetImportReport sheetImportReport) {
+		sheets.add(sheetImportReport);
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
+		sb.append("有效表单");
+		sb.append("【");
+		sb.append(sheets.stream().filter(it -> it.ignoredReason == null).count());
+		sb.append("/");
+		sb.append(sheets.size());
+		sb.append("】");
+		sb.append(" - ");
+		sb.append("共准备导入");
+		sb.append("【");
+		sb.append(sheets.stream().mapToInt(it -> it.rowsReady).sum());
+		sb.append("/");
+		sb.append(sheets.stream().mapToInt(it -> it.rowsTotal).sum());
+		sb.append("】");
+		sb.append("\r\n");
 		for (SheetImportReport sheet : sheets) {
 			sb.append("===============\r\n");
+
 			sb.append(sheet.toString());
 			sb.append("\r\n");
 		}
@@ -31,7 +46,7 @@ public class ImportReport {
 	public static class SheetImportReport {
 		private final String sheetName;
 		private String ignoredReason;
-		public int rowsTotal;
+		public int rowsTotal, rowsReady;
 		public int rowsIgnored;
 		private Map<Integer, Set<String>> errorRows = new LinkedHashMap<>();
 		private List<String> logs = new LinkedList<>();
@@ -62,28 +77,33 @@ public class ImportReport {
 			rowsTotal++;
 		}
 
-		public void log(String msg) {
+		/** return the messaged passed-in as it is, can be used to log with log-framework */
+		public String log(String msg) {
 			logs.add(msg);
+			return msg;
 		}
 
 		@Override
 		public String toString() {
+			StringBuilder sb = new StringBuilder().append("《").append(sheetName).append("》");;
 			if (isIgnored()) {
-				return sheetName + " - 已忽略此表： " + ignoredReason;
+				sb.append("（已忽略）");
+				sb.append(" - ");
+				sb.append(ignoredReason);
+			} else {
+				sb.append(" - ");
+				sb.append("准备导入").append("【").append(rowsReady).append("/").append(rowsTotal).append("】");
 			}
-			StringBuilder sb = new StringBuilder(sheetName).append(" - ");
-			sb.append("数据总行数").append("【").append(rowsTotal).append("】");
+
 			if (rowsIgnored > 0) {
 				sb.append(" - ").append("已忽略行数").append(rowsIgnored).append("【").append("】");
 			}
 			sb.append("\r\n");
 			if (!errorRows.isEmpty()) {
 				sb.append("无效数据行").append("【").append(errorRows.size()).append("】");
-				for (Integer key : errorRows.keySet()) {
-					sb.append("  ");
-					sb.append(key + 1);
-					sb.append("：");
-					sb.append(Strings.join(errorRows.get(key), ','));
+				for (Integer rowNum : errorRows.keySet()) {
+					sb.append("  ").append(rowNum + 1).append("：");
+					sb.append(Strings.join(errorRows.get(rowNum), ','));
 					sb.append("\r\n");
 				}
 			}

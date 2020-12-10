@@ -8,6 +8,8 @@ import static org.springframework.beans.factory.config.ConfigurableBeanFactory.S
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -43,12 +45,13 @@ import com.jytec.cs.domain.Schedule;
 import com.jytec.cs.domain.Site;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
+import com.jytec.cs.excel.exceptions.ClassCourseNotFountException;
 import com.jytec.cs.service.AutoCreateService;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class ModelMappingHelper {
-	private static final Log log = LogFactory.getLog(TrainingScheduleImporter.class);
+	private static final Log log = LogFactory.getLog(ModelMappingHelper.class);
 	private @Autowired DeptRepository deptRepository;
 	private @Autowired MajorRepository majorRepository;
 	private @Autowired ClassCourseRepository classCourseRepository;
@@ -77,10 +80,42 @@ public class ModelMappingHelper {
 	List<Teacher> existsTeachers4UpdateCode = new LinkedList<>();
 	private Set<String> newTeachersWithoutCode = new HashSet<String>();
 	List<ClassCourse> newClassCourses = new LinkedList<ClassCourse>();
+	Map<String, Set<Cell>> classCourseNotFountExceptions = new LinkedHashMap<>();
+	Map<String, Set<Cell>> teacherNotMatchExceptions = new LinkedHashMap<>();
+	Map<String, Set<Cell>> teacherNotFoundExceptions = new LinkedHashMap<>();
+	Map<String, Set<Cell>> siteNotFoundExceptions = new LinkedHashMap<>();
+	/** clear it if suppress exceptions */
+	boolean hasAnyClassCourseNotFountExceptions;
+	boolean hasAnyTeacherNotMatchExceptions;
+	boolean hasAnyTeacherNotFoundExceptions;
+	boolean hasAnySiteNotFoundExceptions;
 
 	public ModelMappingHelper term(Term term) {
 		this.term = term;
 		return this;
+	}
+
+	public void saveStaged() {
+		if (hasAnyClassCourseNotFountExceptions || hasAnyTeacherNotFoundExceptions || hasAnyTeacherNotMatchExceptions
+				|| hasAnySiteNotFoundExceptions) {
+			log.info("存在异常，不予保存！");
+			return;
+		}
+		deptRepository.saveAll(newDepts);
+		majorRepository.saveAll(newMajors);
+		newClasses.forEach(it -> it.setDeptId(it.getMajor().getDept().getId()));
+		classRepository.saveAll(newClasses);
+		courseRepository.saveAll(newCourses);
+
+		// teacherRepository.saveAll(newTeachers.stream().filter(it -> !isEmpty(it.getCode())).collect(toList()));
+		teacherRepository.saveAll(newTeachers);
+		teacherRepository.saveAll(existsTeachers4UpdateCode);
+		// newTeachers.stream().filter(it -> isEmpty(it.getCode() && it.getId()==null)).map(Teacher::getName)
+		getNewTeachersWithoutCode().forEach(autoCreateService::findTeacherByNameOrCreateWithAutoCode);
+		classCourseRepository.saveAll(newClassCourses);
+		// schedule only
+		siteRepository.saveAll(newSitesIndexdByName.values());
+		scheduleRespository.saveAll(newSchedules);
 	}
 
 	private void initClassCoursesIndexedByNames() {
@@ -96,6 +131,15 @@ public class ModelMappingHelper {
 		// TODO: Examine: how training-schedule specify a site when name not unique.
 		try {
 			return siteRepository.findUniqueByName(siteName).orElseGet(() -> {
+				/////////////////////////////////////////////////////
+				Set<Cell> cells = siteNotFoundExceptions.get(siteName);
+				if (cells == null) {
+					cells = new LinkedHashSet<Cell>();
+					siteNotFoundExceptions.put(siteName, cells);
+				}
+				cells.add(cell);
+				hasAnySiteNotFoundExceptions = true;
+				/////////////////////////////////////////////////////
 				if (newSitesIndexdByName == null) {
 					newSitesIndexdByName = new HashMap<>();
 				}
@@ -120,12 +164,32 @@ public class ModelMappingHelper {
 			return classCourse.getTeacher();
 		} else {
 			if (!classCourse.getTeacherNames().contains(teacherName)) {
-				String msg = "课程教师名与选课数据不匹配：" + "在导【" + teacherName + "】 VS 选课【" + classCourse.getTeacherNames() + "】"
-						+ atLocaton(cell);
+				String key = "在导【" + teacherName + "】 VS 选课【" + classCourse.getTeacherNames() + "】";
+				String msg = "课程教师名与选课数据不匹配：" + key + atLocaton(cell);
+				/////////////////////////////////////////////////////
+				Set<Cell> cells = teacherNotMatchExceptions.get(key);
+				if (cells == null) {
+					cells = new LinkedHashSet<Cell>();
+					teacherNotMatchExceptions.put(key, cells);
+				}
+				cells.add(cell);
+				hasAnyTeacherNotMatchExceptions = true;
+				/////////////////////////////////////////////////////
 				log.warn(msg);
 			}
-
-			return findteacherOrStageByName(teacherName, cell);
+			Teacher ret = findteacherOrStageByName(teacherName, cell);
+			if (ret.getId() == 0) {
+				/////////////////////////////////////////////////////
+				Set<Cell> cells = teacherNotFoundExceptions.get(teacherName);
+				if (cells == null) {
+					cells = new LinkedHashSet<Cell>();
+					teacherNotFoundExceptions.put(teacherName, cells);
+				}
+				cells.add(cell);
+				hasAnyTeacherNotFoundExceptions = true;
+				/////////////////////////////////////////////////////
+			}
+			return ret;
 		}
 	}
 
@@ -136,7 +200,15 @@ public class ModelMappingHelper {
 		ClassCourse classCourse = classCoursesIndexedByNames.get(classCourseKey);
 
 		if (classCourse == null) {
-			throw new IllegalStateException("无法找到【班级选课】记录：" + classCourseKey + atLocaton(cell));
+			Set<Cell> cells = classCourseNotFountExceptions.get(classCourseKey);
+			if (cells == null) {
+				cells = new LinkedHashSet<Cell>();
+				classCourseNotFountExceptions.put(classCourseKey, cells);
+			}
+			hasAnyClassCourseNotFountExceptions = true;
+			cells.add(cell);
+			throw new ClassCourseNotFountException("无法找到【班级选课】记录：" + classCourseKey + atLocaton(cell));
+
 		}
 		return classCourse;
 	}
@@ -232,8 +304,9 @@ public class ModelMappingHelper {
 				// throw new IllegalStateException(msg);
 				log.warn(msg);
 			} // or can used by class-course
-			Teacher teacher = autoCreateService.createTeacherWithAutoCode(teacherName, false);
-			newTeachers.add(teacher);
+			ret = autoCreateService.createTeacherWithAutoCode(teacherName, false);
+			newTeachers.add(ret);
+			teachersIndexedByName.put(teacherName, ret);
 		}
 		return ret;
 	}
@@ -284,24 +357,6 @@ public class ModelMappingHelper {
 			newMajors.add(ret);
 		}
 		return ret;
-	}
-
-	public void saveStaged() {
-		deptRepository.saveAll(newDepts);
-		majorRepository.saveAll(newMajors);
-		newClasses.forEach(it -> it.setDeptId(it.getMajor().getDept().getId()));
-		classRepository.saveAll(newClasses);
-		courseRepository.saveAll(newCourses);
-
-		// teacherRepository.saveAll(newTeachers.stream().filter(it -> !isEmpty(it.getCode())).collect(toList()));
-		teacherRepository.saveAll(newTeachers);
-		teacherRepository.saveAll(existsTeachers4UpdateCode);
-		// newTeachers.stream().filter(it -> isEmpty(it.getCode() && it.getId()==null)).map(Teacher::getName)
-		getNewTeachersWithoutCode().forEach(autoCreateService::findTeacherByNameOrCreateWithAutoCode);
-		classCourseRepository.saveAll(newClassCourses);
-		// schedule only
-		siteRepository.saveAll(newSitesIndexdByName.values());
-		scheduleRespository.saveAll(newSchedules);
 	}
 
 	public Collection<String> getNewTeachersWithoutCode() {

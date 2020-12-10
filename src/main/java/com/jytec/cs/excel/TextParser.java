@@ -101,6 +101,7 @@ public interface TextParser {
 
 	final Pattern CLASSES_NAME = Pattern.compile("(?<major>.+?)(?<year>\\d+)-" //
 			+ "(?<classno>\\d+)" // classNo-start or just classNo
+			+ "[\r\n]*" // optional new line
 			+ "(?:[~-](?<classnoTo>\\d+))?" // classNo-end
 			+ "(?:[\\[\\(（]+(?<degree>.+?)[\\]\\)）])?"); // degree: optional
 

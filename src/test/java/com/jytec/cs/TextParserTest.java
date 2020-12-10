@@ -43,23 +43,23 @@ public class TextParserTest {
 	}
 
 	@Test
-	public void testParseClasses() {
+	public void testParseClasses() { //物流19（三二）
 		// standard+
 		Class[] classes = TextParser.parseClasses("理化20-1[高职]理化20-2[高职]", null);
-		assertEquals("理化20-1", classes[0].getName());
-		assertEquals("理化20-2", classes[1].getName());
+		assertEquals("理化20-1[高职]", classes[0].getName());
+		assertEquals("理化20-2[高职]", classes[1].getName());
 		assertEquals("高职", classes[0].getDegree());
 		assertEquals("高职", classes[1].getDegree());
 		assertEquals(2, classes.length);
 		// single without degree
-		assertEquals("理化20-1", classes[0].getName());
 		classes = TextParser.parseClasses("理化20-1", "高职");
+		assertEquals("理化20-1[高职]", classes[0].getName());
 		assertEquals("高职", classes[0].getDegree());
 		assertEquals(1, classes.length);
 		// range(~, with degree)
 		classes = TextParser.parseClasses("会计19-1~2（三二）", null);
-		assertEquals("会计19-1", classes[0].getName());
-		assertEquals("会计19-2", classes[1].getName());
+		assertEquals("会计19-1[三二]", classes[0].getName());
+		assertEquals("会计19-2[三二]", classes[1].getName());
 		assertEquals("三二", classes[0].getDegree());
 		assertEquals("三二", classes[1].getDegree());
 		assertEquals(2, classes.length);

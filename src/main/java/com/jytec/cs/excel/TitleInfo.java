@@ -33,6 +33,8 @@ public class TitleInfo {
 	/** for only training schedule */
 	protected int weeknoColIndex = -1;
 	protected Term parsedTerm;
+	//
+	protected int headerRowIndex, headerRowSpan;
 
 	/** return the time-info {dayOfWeek, timeStart, timeEnd} for the corresponding cell */
 	public TimeInfo getTimeInfo(Cell cell) {
@@ -47,6 +49,10 @@ public class TitleInfo {
 			return new TimeInfo(start.dayOfWeek, start.timeStart, end.timeEnd);
 		}
 		return timeInfo;
+	}
+
+	public int getFollowingDataRowIndex() {
+		return headerRowIndex + headerRowSpan;
 	}
 
 	/** dayOfWeek, timeStart, timeEnd */
@@ -81,7 +87,6 @@ public class TitleInfo {
 
 	public static TitleInfo create(Sheet sheet, int headerRowIndex) {
 		Assert.notNull(sheet, "Sheet 参数不应为空！");
-		int titleRowSpan = -1;
 		Row headerRow = sheet.getRow(headerRowIndex);
 		if (headerRow == null) {
 			throw new HeaderRowNotFountException(sheet);
@@ -97,14 +102,16 @@ public class TitleInfo {
 			if (Pattern.matches(weeknoColHeaderPattern, header)) {
 				titleInfo.weeknoColIndex = headerCell.getColumnIndex();
 				CellRangeAddress ma = MergingAreas.getMergingArea(headerCell);
-				titleRowSpan = (ma.getLastRow() - ma.getFirstRow() + 1); // row-span
-				// dataFirstRowIndex = headerRowIndex + titleRowSpan;
+				titleInfo.headerRowIndex = headerRowIndex;
+				titleInfo.headerRowSpan = (ma.getLastRow() - ma.getFirstRow() + 1); // row-span
 			} else if (Pattern.matches(classNameColHeaderPattern, header)) {
 				titleInfo.classColIndex = headerCell.getColumnIndex();
 			} else if (Pattern.matches(THORY_DAY_TIME_PATTERN, header)) { // for theory-schedule
 				Matcher m = Pattern.compile(THORY_DAY_TIME_PATTERN).matcher(header);
-				if (!m.find())
-					throw new IllegalStateException("未识别的表头【" + header + "】" + atLocaton(headerCell));
+				if (!m.find()) {
+					String msg = "未识别的表头【" + header + "】" + atLocaton(headerCell, false);
+					throw new HeaderRowNotFountException(msg, sheet);
+				}
 
 				byte dayOfWeek = (byte) (dayOfWeekWords.indexOf(m.group(1)) + 1); // 0-based -> 1-baseFd
 				byte timeStart = Byte.parseByte(m.group(2));
@@ -114,10 +121,13 @@ public class TitleInfo {
 				String weekWord = Regex.group(1, Pattern.compile(dayOfWeekHeaderPattern), header);
 				int dayOfWeek = dayOfWeekWords.indexOf(weekWord) + 1; // 0-based -> 1-baseFd
 
+				Assert.isTrue(titleInfo.headerRowSpan > -1, "识别到列头星期，但暂未识别到周数列");
+				int headerRowSpan = titleInfo.headerRowSpan;
 				// handle sub headers for time-range[timeStart, timeEnd]
 				CellRangeAddress ma = MergingAreas.getMergingArea(headerCell);
+				Assert.isTrue(ma != null, "检测到星期表头异常，此处预期应该是合并的单元格" + atLocaton(headerCell));
 				for (int colIndex4TR = ma.getFirstColumn(); colIndex4TR <= ma.getLastColumn(); colIndex4TR++) {
-					for (int rowIndex = headerRowIndex + 1; rowIndex < headerRowIndex + titleRowSpan; rowIndex++) {
+					for (int rowIndex = headerRowIndex + 1; rowIndex < headerRowIndex + headerRowSpan; rowIndex++) {
 						Cell timeRangeCell = MergingAreas.getCell(sheet, rowIndex, colIndex4TR);
 						String subHeader = cellString(timeRangeCell);
 						if (!Regex.matchesPart(timeRangeSubHeaderPattern, subHeader))
@@ -132,7 +142,8 @@ public class TitleInfo {
 					}
 				}
 			} else if (!Pattern.matches(otherAcceptableHeaderPattern, header)) {
-				throw new IllegalStateException("未识别的表头【" + header + "】" + atLocaton(headerCell));
+				String msg = "未识别的表头【" + header + "】" + atLocaton(headerCell, false);
+				throw new HeaderRowNotFountException(msg, sheet);
 			}
 		}
 		return titleInfo;
@@ -153,7 +164,7 @@ public class TitleInfo {
 				// TODO: handle exception
 			}
 		}
-		throw originalE!=null ? originalE : new HeaderRowNotFountException(sheet);
+		throw originalE != null ? originalE : new HeaderRowNotFountException(sheet);
 	}
 
 	public static void searchAndValidateTerm(Sheet sheet, Term term) {
@@ -161,7 +172,9 @@ public class TitleInfo {
 		String title = rowString(titleRow);
 		Term parsedTerm = TextParser.parseTerm(title);
 		if (parsedTerm == null) {
-			log.warn("无法从标题中识别学期：" + title + atLocaton(titleRow));
+			String msg = titleRow != null ? "无法从标题中识别学期：" + title + atLocaton(titleRow)
+					: "无法从表格中识别学期（无标题行）" + atLocaton(sheet);
+			log.warn(msg);
 		} else if (parsedTerm.getTermYear() != term.getTermYear() || parsedTerm.getTermMonth() != term.getTermMonth()) {
 			throw new IllegalArgumentException("表格标题【" + title + "】与指定的学期不同！" + atLocaton(titleRow));
 		}

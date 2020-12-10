@@ -17,13 +17,15 @@ import org.springframework.util.Assert;
 
 import com.jytec.cs.excel.api.ImportParams;
 import com.jytec.cs.excel.api.ImportReport;
+import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
 
 public abstract class AbstractImporter implements ApplicationContextAware {
-	protected static Log log = LogFactory.getLog(AbstractImporter.class.getPackage().getName());
+	protected final Log log = LogFactory.getLog(getClass());
 	protected ApplicationContext applicationContext;
 
 	/**
 	 * Prepare context.
+	 * 
 	 * @param params
 	 * @throws EncryptedDocumentException
 	 * @throws IOException
@@ -42,7 +44,11 @@ public abstract class AbstractImporter implements ApplicationContextAware {
 			doImport(wb, context);
 		}
 		log.debug("文件处理结束：" + params.file.getAbsolutePath());
-		return context.report;
+		return context.reports;
+	}
+
+	protected boolean before(Sheet sheet, ImportContext context) {
+		return sheet.getLastRowNum() > 0;
 	}
 
 	/**
@@ -53,10 +59,17 @@ public abstract class AbstractImporter implements ApplicationContextAware {
 	protected void doImport(Workbook wb, ImportContext context) {
 		for (int i = 0; i < wb.getNumberOfSheets(); i++) {
 			Sheet sheet = wb.getSheetAt(i);
-			if (sheet.getLastRowNum() > 0) {
-				doImport(sheet, context);	
+			if (before(sheet, context)) {
+				SheetImportReport rpt = new SheetImportReport(sheet.getSheetName());
+				context.reports.append(rpt);
+				context.report = rpt;
+				doImport(sheet, context);
+				after(sheet, context);
 			}
 		}
+	}
+
+	protected void after(Sheet sheet, ImportContext context) {
 	}
 
 	protected abstract void doImport(Sheet sheet, ImportContext context);
