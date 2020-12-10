@@ -24,8 +24,7 @@ public class SiteService extends ModelService<Site> {
 				.like("m.multimedia", params.q, true, true)
 			.endGrp()
 			//
-		.endWhere()
-		.orderBy("m.name"); //@formatter:on
+		.endWhere(); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 }
