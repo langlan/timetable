@@ -32,8 +32,7 @@ public class ClassCourseService extends CommonService{
 			.eq("m.name", params.name)
 //			.eq("m.idc", params.idc)
 			.eq("m.year", params.year)
-		.endWhere()
-		.orderBy("m.name"); //@formatter:on
+		.endWhere(); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 	
@@ -53,8 +52,7 @@ public class ClassCourseService extends CommonService{
 			.eq("m.examineMethod", params.examineMethod)
 			.eq("m.labByTheory", params.labByTheory)
 			.eq("m.locationType", params.locationType)
-		.endWhere()
-		.orderBy("m.name"); //@formatter:on
+		.endWhere(); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 
