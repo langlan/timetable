@@ -4,6 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
@@ -28,10 +29,19 @@ public interface Texts {
 		return null;
 	}
 
-	/** always return a not null string, trimed */
+	/** always return a not null string, trimmed */
 	static String cellString(Cell cell) {
-		String text = cell != null ? cell.toString() : "";
-		return text.trim();
+		if (cell != null) {
+			if (cell.getCellType() == CellType.NUMERIC) {
+				double dv = cell.getNumericCellValue();
+				long lv = (long) dv;
+				if(lv==dv) {
+					return Long.toString(lv);
+				}
+			}
+			return cell.toString().trim();
+		}
+		return "";
 	}
 
 	/** Concatenate all cell strings without delimiter, always return a not null string */
