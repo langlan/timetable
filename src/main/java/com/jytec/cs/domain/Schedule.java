@@ -47,6 +47,7 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 	private byte weekno, dayOfWeek;
 	private String date; // format: ref Date.date
 	private byte timeStart, timeEnd; // 起止课时
+	private byte timeSpan; // timeEnd - timeStart + 1
 	private byte lessonSpan; // (timeEnd - timeStart + 1) / 2
 	// Other
 	private String courseType; // N/T for 普通|实训
@@ -132,9 +133,20 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 		this.timeEnd = timeEnd;
 	}
 
+	public byte getTimeSpan() {
+		if (timeSpan == 0) {
+			return (byte) (timeEnd - timeStart + 1);
+		}
+		return timeSpan;
+	}
+
+	public void setTimeSpan(byte timeSpan) {
+		this.timeSpan = timeSpan;
+	}
+
 	public byte getLessonSpan() {
 		if (lessonSpan == 0) {
-			return (byte) ((timeEnd - timeStart + 1) / 2);
+			return (byte) Math.ceil((timeEnd - timeStart + 1) / 2.0);
 		}
 		return lessonSpan;
 	}
