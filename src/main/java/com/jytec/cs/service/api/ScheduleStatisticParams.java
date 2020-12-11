@@ -10,7 +10,7 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 	private static final Map<String, String> allowedGroupByProps;
 	private static final Set<String> allowedCountDistinct;
 	static {
-		String props = "termId,weekno,dayOfWeek,date,timeStart,timeEnd,courseType,trainingType";
+		String props = "termId,weekno,dayOfWeek,date,timeStart,timeEnd,lessonSpan,courseType,trainingType";
 		allowedGroupByProps = new HashMap<>();
 		for (String prop : props.split(",")) {
 			allowedGroupByProps.put(prop, prop);

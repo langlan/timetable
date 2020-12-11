@@ -9,7 +9,7 @@ public class ScheduleSearchParams extends TermSearchParams {
 	// TODO: public Range<String> date;
 	public Byte weekno, dayOfWeek;
 	public String date;
-	public Byte timeStart, timeEnd;
+	public Byte timeStart, timeEnd, lessonSpan;;
 
 	public Long classId, teacherId;
 	public String courseCode;
@@ -25,6 +25,7 @@ public class ScheduleSearchParams extends TermSearchParams {
 	public Short classYear;
 	// course-join
 	public String courseCate;
+	
 
 	public Map<String, Object> getMapOfNonEmpty() {
 		Field[] fields = getClass().getFields();// all public
@@ -60,6 +61,10 @@ public class ScheduleSearchParams extends TermSearchParams {
 
 	public void setTimeEnd(Byte timeEnd) {
 		this.timeEnd = timeEnd;
+	}
+	
+	public void setLessonSpan(Byte lessonSpan) {
+		this.lessonSpan = lessonSpan;
 	}
 
 	public void setClassId(Long classId) {
