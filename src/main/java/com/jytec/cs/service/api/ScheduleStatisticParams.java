@@ -23,6 +23,7 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 		allowedGroupByProps.put("deptId", "theClass.deptId");
 		allowedGroupByProps.put("classYear", "theClass.year");
 		allowedGroupByProps.put("courseCate", "course.cate");
+		allowedGroupByProps.put("yearMonth", "substr({root}.date, 1, 7)");
 
 		allowedCountDistinct = new HashSet<>();
 		allowedCountDistinct.addAll(Arrays.asList("classId", "courseCode", "siteId", "teacherId", "majorId", "deptId"));
@@ -120,9 +121,14 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 					if (sb.length() > 0) {
 						sb.append(",");
 					}
-					sb.append(rootAlias);
-					sb.append(".");
-					sb.append(realProp);
+					if(realProp.contains("{root}")) {
+						realProp = realProp.replaceAll("\\{root\\}", rootAlias);
+						sb.append(realProp);
+					}else {
+						sb.append(rootAlias);
+						sb.append(".");
+						sb.append(realProp);
+					}
 					if (selectAlias) { // else for group-by clause.
 						sb.append(" as ");
 						sb.append(prop);
