@@ -1,13 +1,11 @@
 package com.jytec.cs.excel;
 
 import static com.jytec.cs.excel.parse.Texts.atLocaton;
-import static java.util.stream.Collectors.toSet;
 import static langlan.sql.weaver.u.Variables.isNotEmpty;
 import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -18,15 +16,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import javax.persistence.NonUniqueResultException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.ss.usermodel.Cell;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
-import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import com.jytec.cs.dao.ClassCourseRepository;
 import com.jytec.cs.dao.ClassRepository;
@@ -46,6 +42,7 @@ import com.jytec.cs.domain.Site;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.exceptions.ClassCourseNotFountException;
+import com.jytec.cs.excel.exceptions.ModelMappingException;
 import com.jytec.cs.service.AutoCreateService;
 
 @Component
@@ -70,15 +67,15 @@ public class ModelMappingHelper {
 	private Map<String, Teacher> teachersIndexedByName;
 	private Map<String, Dept> deptsIndexdByName;
 	private Map<String, Major> majorsIndexdByName;
-	private Map<String, Site> newSitesIndexdByName = new HashMap<>();
-	private List<Schedule> newSchedules = new LinkedList<>();
+	private Map<String, Site> newSitesWithoutCodeIndexdByName = new HashMap<>();
+	List<Schedule> newSchedules = new LinkedList<>();
 	List<Dept> newDepts = new LinkedList<>();
 	List<Major> newMajors = new LinkedList<>();
 	List<Class> newClasses = new LinkedList<>();
 	List<Course> newCourses = new LinkedList<>();
 	List<Teacher> newTeachers = new LinkedList<>();
 	List<Teacher> existsTeachers4UpdateCode = new LinkedList<>();
-	private Set<String> newTeachersWithoutCode = new HashSet<String>();
+	private Map<String, Teacher> newTeachersWithoutCodeIndexedByName = new HashMap<>();
 	List<ClassCourse> newClassCourses = new LinkedList<ClassCourse>();
 	Map<String, Set<Cell>> classCourseNotFountExceptions = new LinkedHashMap<>();
 	Map<String, Set<Cell>> teacherNotMatchExceptions = new LinkedHashMap<>();
@@ -108,13 +105,13 @@ public class ModelMappingHelper {
 		courseRepository.saveAll(newCourses);
 
 		// teacherRepository.saveAll(newTeachers.stream().filter(it -> !isEmpty(it.getCode())).collect(toList()));
+		// newTeachers.forEach(t -> VOID(isEmpty(t.getCode()) ? autoCreateService.save(t) : teacherRepository.save(t)));
 		teacherRepository.saveAll(newTeachers);
 		teacherRepository.saveAll(existsTeachers4UpdateCode);
-		// newTeachers.stream().filter(it -> isEmpty(it.getCode() && it.getId()==null)).map(Teacher::getName)
-		getNewTeachersWithoutCode().forEach(autoCreateService::findTeacherByNameOrCreateWithAutoCode);
+		newTeachersWithoutCodeIndexedByName.values().forEach(autoCreateService::save); // class-course or schedule.
 		classCourseRepository.saveAll(newClassCourses);
 		// schedule only
-		siteRepository.saveAll(newSitesIndexdByName.values());
+		newSitesWithoutCodeIndexdByName.values().forEach(it -> autoCreateService.save(it));
 		scheduleRespository.saveAll(newSchedules);
 	}
 
@@ -126,35 +123,65 @@ public class ModelMappingHelper {
 			throw new IllegalStateException("发现现存【班级选课表】中存在重复数据！");
 	}
 
+	Map<String, List<Site>> sitesIndexdByName = null;
+	List<Site> sitesWithNotUniqueName;
+
 	public Site findSite(String siteName, Cell cell) {
+		if (isEmpty(siteName)) {
+			return null;
+		}
+		if (sitesIndexdByName == null) {
+			sitesIndexdByName = new HashMap<>();
+			List<Site> au = siteRepository.findAllWithUniqueName();
+			au.forEach(it -> sitesIndexdByName.put(it.getName(), Collections.singletonList(it)));
+			List<Site> anu = siteRepository.findAllWithNotUniqueName();
+			anu.forEach(it -> {
+				List<Site> lst = new LinkedList<>();
+				lst.add(it);
+				sitesIndexdByName.merge(it.getName(), lst, (left, right) -> {
+					left.addAll(right);
+					return left;
+				});
+			});
+			sitesWithNotUniqueName = anu;
+		}
 		// NODE: name is not actually a unique key. but for theory course, we suppose so.
 		// TODO: Examine: how training-schedule specify a site when name not unique.
-		try {
-			return siteRepository.findUniqueByName(siteName).orElseGet(() -> {
-				/////////////////////////////////////////////////////
-				Set<Cell> cells = siteNotFoundExceptions.get(siteName);
-				if (cells == null) {
-					cells = new LinkedHashSet<Cell>();
-					siteNotFoundExceptions.put(siteName, cells);
+		List<Site> sites = sitesIndexdByName.get(siteName);
+		if (sites != null) {
+			if (sites.size() == 1) {
+				return sites.get(0);
+			} else {
+				throw new ModelMappingException("非唯一：存在多个同名上课地点【" + siteName + "】，无法抉择" + atLocaton(cell));
+			}
+		} else {
+			// try sites with not-unique name
+			for (Site s : sitesWithNotUniqueName) {
+				if (siteName.equals(s.getRoomType()) || siteName.equals(s.getName4Training())) {
+					return s;
 				}
-				cells.add(cell);
-				hasAnySiteNotFoundExceptions = true;
-				/////////////////////////////////////////////////////
-				if (newSitesIndexdByName == null) {
-					newSitesIndexdByName = new HashMap<>();
-				}
-				Site ret = newSitesIndexdByName.get(siteName);
-				if (ret == null) {
-					String msg = "找不到上课地点【" + siteName + "】" + atLocaton(cell);
-					log.warn(msg);
-					// throw new IllegalStateException(warn);
-					ret = autoCreateService.createSiteWithAutoCode(siteName, false);
-					newSitesIndexdByName.put(siteName, ret);
-				}
-				return ret;
-			});
-		} catch (IncorrectResultSizeDataAccessException | NonUniqueResultException e) {
-			throw new IllegalStateException("非唯一：存在多个同名上课地点【" + siteName + "】" + atLocaton(cell));
+			}
+			/////////////////////////////////////////////////////
+			Set<Cell> cells = siteNotFoundExceptions.get(siteName);
+			if (cells == null) {
+				cells = new LinkedHashSet<Cell>();
+				siteNotFoundExceptions.put(siteName, cells);
+			}
+			cells.add(cell);
+			hasAnySiteNotFoundExceptions = true;
+			/////////////////////////////////////////////////////
+			if (newSitesWithoutCodeIndexdByName == null) {
+				newSitesWithoutCodeIndexdByName = new HashMap<>();
+			}
+			Site ret = newSitesWithoutCodeIndexdByName.get(siteName);
+			if (ret == null) {
+				String msg = "找不到上课地点【" + siteName + "】" + atLocaton(cell);
+				log.warn(msg);
+				// throw new IllegalStateException(warn);
+				ret = autoCreateService.createSiteWithAutoCode(siteName, false);
+				newSitesWithoutCodeIndexdByName.put(siteName, ret);
+			}
+			return ret;
 		}
 	}
 
@@ -239,19 +266,21 @@ public class ModelMappingHelper {
 		}
 	}
 
-	private void initTeachersIndexedByName() {
+	private Map<String, Teacher> initTeachersIndexedByName() {
 		if (teachersIndexedByName == null) {
 			teachersIndexedByName = stream(teacherRepository.findAll())
 					.collect(Collectors.toMap(Teacher::getName, it -> it));
 		}
+		return teachersIndexedByName;
 	}
 
-	private void initClassCoursesIndexedByClassNameAndCourseCode() {
+	private Map<String, ClassCourse> initClassCoursesIndexedByClassNameAndCourseCode() {
 		if (classCoursesIndexedByClassNameAndCourseCode == null) {
 			List<Object[]> all = classCourseRepository.findAllIndexedByClassNameCourseCode(term.getId());
 			classCoursesIndexedByClassNameAndCourseCode = all.stream()
 					.collect(Collectors.toMap(it -> it[0].toString(), it -> (ClassCourse) it[1]));
 		}
+		return classCoursesIndexedByClassNameAndCourseCode;
 	}
 
 	public Class findClassOrStageByName(Class cls, Major major) {
@@ -278,13 +307,19 @@ public class ModelMappingHelper {
 		return ret;
 	}
 
+	/** only used by class-course importing */
 	public Teacher findteacherOrStageByName(Teacher forSave) {
+		Assert.isTrue(!isEmpty(forSave.getCode()), "教师职工号不应为空！");
 		initTeachersIndexedByName();
 		Teacher ret = teachersIndexedByName.get(forSave.getName());
 		if (ret == null) {
 			ret = forSave;
 			teachersIndexedByName.put(forSave.getName(), forSave);
 			newTeachers.add(forSave);
+			// ensure kick out the same name in without-code map.
+			// even the other-side checked, or even the caller of other-side checked.
+			Teacher shit = newTeachersWithoutCodeIndexedByName.remove(forSave.getName());
+			Assert.isNull(shit, "Shit shouldn't happen, check what you done.");
 		} else if (isNotEmpty(forSave) && !isEmpty(forSave.getCode())
 				&& (isEmpty(forSave.getCode()) || forSave.getCode().startsWith("T"))) {
 			ret.setCode(forSave.getCode());
@@ -295,31 +330,36 @@ public class ModelMappingHelper {
 		return ret;
 	}
 
+	/** only used by class-course importing */
+	public void stageTeacherWithoutCodeIfAbsent(String teacherName) {
+		this.findteacherOrStageByName(teacherName, null);
+	}
+
+	/** used by schedule or class-course importing */
 	public Teacher findteacherOrStageByName(String teacherName, Cell cell) {
-		initTeachersIndexedByName();
-		Teacher ret = teachersIndexedByName.get(teacherName);
+		if (isEmpty(teacherName)) {
+			return null;
+		}
+		Teacher ret = initTeachersIndexedByName().get(teacherName);
 		if (ret == null) {
 			if (cell != null) { // used by schedule
 				String msg = "找不到教师【" + teacherName + "】" + atLocaton(cell);
 				// throw new IllegalStateException(msg);
 				log.warn(msg);
 			} // or can used by class-course
-			ret = autoCreateService.createTeacherWithAutoCode(teacherName, false);
-			newTeachers.add(ret);
-			teachersIndexedByName.put(teacherName, ret);
+			ret = newTeachersWithoutCodeIndexedByName.get(teacherName);
+			if (ret == null) {
+				ret = autoCreateService.createTeacherWithAutoCode(teacherName, false);
+				newTeachersWithoutCodeIndexedByName.put(teacherName, ret);
+			}
 		}
 		return ret;
-	}
-
-	public void stageTeachersWithoutCodeIfAbsent(Collection<String> otherTeacherNames) {
-		this.newTeachersWithoutCode.addAll(otherTeacherNames);
 	}
 
 	public ClassCourse findClassCourseOrStageByClassNameAndCourseCode(ClassCourse classCourse, Class cls, Course course,
 			Teacher teacher) {
 		String classCourseKey = cls.getName() + "-" + course.getCode();
-		initClassCoursesIndexedByClassNameAndCourseCode();
-		ClassCourse ret = classCoursesIndexedByClassNameAndCourseCode.get(classCourseKey);
+		ClassCourse ret = initClassCoursesIndexedByClassNameAndCourseCode().get(classCourseKey);
 		if (ret == null) {
 			ret = classCourse;
 			classCourse.setCourse(course);
@@ -359,14 +399,11 @@ public class ModelMappingHelper {
 		return ret;
 	}
 
-	public Collection<String> getNewTeachersWithoutCode() {
-		newTeachersWithoutCode = newTeachersWithoutCode.stream().filter(it -> teachersIndexedByName.get(it) == null)
-				.collect(toSet());
-		return newTeachersWithoutCode;
-	}
-
 	static <T> Stream<T> stream(Iterable<T> its) {
 		return StreamSupport.stream(its.spliterator(), false);
+	}
+
+	static void VOID(Object o) {
 	}
 
 	boolean isEmpty(String v) {
@@ -397,9 +434,9 @@ public class ModelMappingHelper {
 		ret.majors = newMajors.size();
 		ret.classes = newClasses.size();
 		ret.courses = newCourses.size();
-		ret.teachers = newTeachers.size() + getNewTeachersWithoutCode().size();
+		ret.teachers = newTeachers.size() + newTeachersWithoutCodeIndexedByName.size();
 		ret.classCourses = newClassCourses.size();
-		ret.sites = newSitesIndexdByName.size();
+		ret.sites = newSitesWithoutCodeIndexdByName.size();
 		ret.schedules = newSchedules.size();
 		return ret;
 	}

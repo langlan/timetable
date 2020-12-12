@@ -58,11 +58,13 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 
 		ModelMappingHelper mhelper = context.modelHelper;
 
+		boolean siteNameResolved = false, siteModelResolved = false;
+		String trainingSiteName = null;
 		Site trainingSite = null;
 		int previousFirstDataRowIndex = -1;
 		dataLoop: for (int rowIndex = dataFirstRowIndex; rowIndex < sheet.getLastRowNum(); rowIndex++) {
-			Row row = sheet.getRow(rowIndex);
-			if (row == null) {
+			Row dataRow = sheet.getRow(rowIndex);
+			if (dataRow == null) {
 				break;
 			}
 
@@ -72,10 +74,11 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 			RowType rowType = RowType.guessRowTypeByWeekNoCell(weekRangeCell);
 			switch (rowType) {
 			case DATA:
-				if (trainingSite == null) {
+				if (!siteNameResolved) {
 					if (previousFirstDataRowIndex == -1) { // remember this row, go back later;
 						previousFirstDataRowIndex = rowIndex;
 					}
+					rowIndex = rowIndex + MergingAreas.getCellRowSpan(weekRangeCell) - 1;
 					continue dataLoop;
 				} else {
 					previousFirstDataRowIndex = -1;
@@ -83,49 +86,58 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 				// take two rows. but do it after reading.
 				break;
 			case SITE:
-				if (trainingSite == null) {
-					String siteName = Regex.group(1, Pattern.compile(PATTERN_SITE), Texts.cellString(weekRangeCell));
-					trainingSite = mhelper.findSite(siteName, weekRangeCell);
+				if (!siteNameResolved) {
+					trainingSiteName = Regex.group(1, Pattern.compile(PATTERN_SITE), Texts.cellString(weekRangeCell));
+					siteNameResolved = true;
+					// trainingSite = mhelper.findSite(siteName, weekRangeCell);
 					// go back remembered first-data-row along with the training-site.
 					rowIndex = previousFirstDataRowIndex - 1; // the loop itself will increase
 				} else { // hit again.
-					trainingSite = null;
+					siteNameResolved = false;
+					// trainingSite = null;
 					previousFirstDataRowIndex = -1;
 				}
 				continue dataLoop;
 			case HEADER:
 				titleInfo = TitleInfo.create(sheet, rowIndex);
-				trainingSite = null;
+				siteNameResolved = false;
 				previousFirstDataRowIndex = -1;
 				rowIndex = rowIndex + (titleInfo.headerRowSpan - 1);
 				continue dataLoop;
 			default:
-				if (row != null) {
-					log.info("Ignore row: " + Texts.rowString(row) + atLocaton(row));
+				if (dataRow != null) {
+					log.info("Ignore row: " + Texts.rowString(dataRow) + atLocaton(dataRow));
 				}
 
 				break dataLoop;
 			}
-
+			/////////////// determine cell row span //////////////
+			DataRowSpan drs = new DataRowSpan(dataRow, titleInfo);
 			boolean anyCellImported = false;
-
 			// parse weekno-range
 			TimeRange weekRange = TextParser.parseTrainingWeeknoRange(cellString(weekRangeCell));
 			// parse class
 			String classesName = TextParser.handleMalFormedDegree(cellString(classCell));
 			if (classesName.isEmpty() || weekRange == null) {
-				log.info("忽略无效数据行：班级列为空，周数列【" + cellString(weekRangeCell) + "】" + atLocaton(row));
-				rowIndex++;
-				continue;
+				throw new IllegalStateException("请勿在表头与实操地点之间保留空行！");
 			} else if (!classesName.contains(classYearFilter)) {
-				log.info("忽略整行（不包指定年级的班级）：【" + classesName + "】" + atLocaton(row));
-				rowIndex++;
+				log.info(rpt.log("忽略整行（不包含指定年级的班级）：【" + classesName + "】" + atLocaton(dataRow, false)));
+				rowIndex += drs.getDataRowSpan() - 1;
 				rpt.rowsTotal++;
 				continue;
 			}
 
+			// TODO: some site name not machine-readable: site-name1，周三（1-2）site-name2
+			// @ schedule-training-21.xls[电技18（修改）]
+			if (!siteModelResolved) {
+				Assert.isTrue(siteNameResolved, "DEV: Check Code");
+				trainingSite = mhelper.findSite(trainingSiteName, weekRangeCell);
+				siteModelResolved = true;
+			}
+
+			// TODO: some sheet takes 3 rows: course-name takes 1, but teacher-name-takes 2. @
 			Class[] pcs = TextParser.parseClasses(classesName, defaultDegree);
-			log.debug("# 解析班级：【" + classesName + "】" + atLocaton(row));
+			log.debug("# 解析班级：【" + classesName + "】" + atLocaton(dataRow));
 			Assert.isTrue(pcs.length > 0, "解析班级失败，疑似格式有误：" + classesName + atLocaton(classCell));
 			OverlappingChecker overlappingChecker = context.getAttribute(OverlappingChecker.class.getName(),
 					OverlappingChecker::new);
@@ -133,7 +145,7 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 				String classNameWithDegree = pc.getName() /* + "[" + pc.getDegree() + "]" */;
 
 				if (!classNameWithDegree.contains(classYearFilter)) {
-					log.info("忽略班级（非指定年级）：【" + classesName + "】" + atLocaton(row));
+					log.info(rpt.log("忽略班级（非指定年级）：【" + classesName + "】" + atLocaton(dataRow)));
 					continue;
 				}
 
@@ -142,12 +154,12 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 				int count = scheduleRespository.countTrainingByClassAndTermAndWeek(pc.getName(), term.getId(),
 						weekRange.weeknoStart, weekRange.weeknoEnd);
 				if (count > 0) {
-					log.info("忽略班级（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(row));
+					log.info(rpt.log("忽略班级（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(dataRow)));
 					continue;
 				}
 
 				for (Integer colIndex : titleInfo.timeInfos.keySet()) {
-					Cell scheduledCell = row.getCell(colIndex);
+					Cell scheduledCell = dataRow.getCell(colIndex);
 					TimeInfo timeInfo = titleInfo.getTimeInfo(scheduledCell);
 					String courseName = cellString(scheduledCell);
 					String teacherName = cellString(sheet.getRow(rowIndex + 1).getCell(colIndex));
@@ -178,7 +190,7 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 					}
 				} // end of each schedule-cell
 			} // end of each class
-			rowIndex++; // take two rows.
+			rowIndex += drs.getDataRowSpan() - 1; // take two rows or more.
 			rpt.rowsTotal++;
 			if (anyCellImported)
 				rpt.rowsReady++;
@@ -187,7 +199,7 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 		// Should it be called through other UI to keep data-import and date-build independent.
 	}
 
-	enum RowType {
+	static enum RowType {
 		HEADER, DATA, SITE, MADE_BY, MAIN_TITLE, UNKNOWN;
 
 		static final Pattern p = Pattern.compile("(周\\s*数)|(\\d+)|(实操地点.+)");
@@ -207,6 +219,43 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 			}
 			return UNKNOWN;
 		}
+	}
+
+	static class DataRowSpan {
+		int courseNameCellRowSpan, teacherNameCellRowSpan;
+
+		public DataRowSpan(Row dataRow, TitleInfo titleInfo) {
+			for (Integer colIndex : titleInfo.timeInfos.keySet()) {
+				Cell courseNameCell = dataRow.getCell(colIndex);
+				if (courseNameCell != null) {
+					int _courseNameCellRowSpan = MergingAreas.getCellRowSpan(courseNameCell);
+					if (courseNameCellRowSpan > 0) {
+						Assert.isTrue(courseNameCellRowSpan == _courseNameCellRowSpan,
+								"所有课程名单元格的不必合并，若合并则合并行数须保持一致！" + atLocaton(courseNameCell));
+					} else {
+						courseNameCellRowSpan = _courseNameCellRowSpan;
+					}
+					Cell teacherNameCell = dataRow.getSheet().getRow(dataRow.getRowNum() + courseNameCellRowSpan)
+							.getCell(colIndex);
+					if (teacherNameCell != null) {
+						int _teacherNameCellRowSpan = MergingAreas.getCellRowSpan(teacherNameCell);
+						if (teacherNameCellRowSpan > 0) {
+							Assert.isTrue(_teacherNameCellRowSpan == teacherNameCellRowSpan,
+									"所有教师名单元格不必全并，若合并则合并行数须保持一致！" + atLocaton(courseNameCell));
+						} else {
+							teacherNameCellRowSpan = _teacherNameCellRowSpan;
+						}
+					}
+				}
+			}
+			Assert.isTrue(courseNameCellRowSpan > 0, "数据行合并行数检测失败！");
+			Assert.isTrue(teacherNameCellRowSpan > 0, "数据行合并行数检测失败！");
+		}
+
+		public int getDataRowSpan() {
+			return courseNameCellRowSpan + teacherNameCellRowSpan;
+		}
+
 	}
 
 }

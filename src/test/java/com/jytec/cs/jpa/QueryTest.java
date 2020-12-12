@@ -42,5 +42,13 @@ public class QueryTest {
 		assertEquals(list.size(), list2.size());
 		// assertArrayEquals(list.toArray(), list2.toArray());
 	}
+	
+	@Test
+	public void testJPQLSubStr() {
+		Query q = em.createQuery("Select substr(m.date, 1, 7) from Schedule m Where m.id < 10");
+		@SuppressWarnings("unchecked")
+		List<String> list = q.getResultList();
+		System.out.println(list);
+	}
 
 }

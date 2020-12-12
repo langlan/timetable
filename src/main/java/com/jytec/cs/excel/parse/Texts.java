@@ -35,7 +35,7 @@ public interface Texts {
 			if (cell.getCellType() == CellType.NUMERIC) {
 				double dv = cell.getNumericCellValue();
 				long lv = (long) dv;
-				if(lv==dv) {
+				if (lv == dv) {
 					return Long.toString(lv);
 				}
 			}
@@ -70,6 +70,11 @@ public interface Texts {
 
 	static String atLocaton(Row row) {
 		return Messages.format("at-row", row.getSheet().getSheetName(), row.getRowNum() + 1);
+	}
+
+	static String atLocaton(Row row, boolean withSheetInfo) {
+		return withSheetInfo ? Messages.format("at-row", row.getSheet().getSheetName(), row.getRowNum() + 1)
+				: Messages.format("at-row-without-sheet", row.getRowNum() + 1);
 	}
 
 	static String atLocaton(Cell cell) {

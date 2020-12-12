@@ -11,10 +11,14 @@ public class ImportParams {
 	public boolean preview;
 	/** for:[schedule/training-schedule] */
 	public int classYear;
-	/** for:[schedule/training-schedule] */
-	public boolean suppressClassCourseNotFoundError;
-	public boolean suppressTeacherNotFoundException;
-	public boolean suppressTeacherNotMatchException;
+	/** for:[schedule/training-schedule], ignore such rows and save others. */
+	public boolean saveOnClassCourseNotFound;
+	/** force save even not match */
+	public boolean saveOnTeacherNotMatch;
+	/** force save even not find, auto-create */
+	public boolean saveOnTeacherNotFound;
+	/** force save even not find, auto-create */
+	public boolean saveOnSiteNotFound;
 
 	public void validate() {
 
@@ -29,15 +33,34 @@ public class ImportParams {
 		this.term = term;
 		return this;
 	}
-	
+
 	public ImportParams classYear(int classYear) {
 		this.classYear = classYear;
 		return this;
 	}
-	
-	public ImportParams suppressClassCourseNotFoundError() {
-		this.suppressClassCourseNotFoundError = true;
+
+	public ImportParams saveOnClassCourseNotFound() {
+		this.saveOnClassCourseNotFound = true;
 		return this;
+	}
+
+	public ImportParams saveOnTeacherNotMatch() {
+		this.saveOnTeacherNotMatch = true;
+		return this;
+	}
+
+	public ImportParams saveOnTeacherNotFound() {
+		this.saveOnTeacherNotFound = true;
+		return this;
+	}
+
+	public ImportParams saveOnSiteNotFound() {
+		this.saveOnSiteNotFound = true;
+		return this;
+	}
+
+	public ImportParams saveOnAllErrorTypes() {
+		return saveOnClassCourseNotFound().saveOnTeacherNotMatch().saveOnTeacherNotFound().saveOnSiteNotFound();
 	}
 
 	public static ImportParams create() {

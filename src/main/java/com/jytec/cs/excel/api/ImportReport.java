@@ -26,6 +26,7 @@ public class ImportReport {
 		sb.append("/");
 		sb.append(sheets.size());
 		sb.append("】");
+		sb.append("个");
 		sb.append(" - ");
 		sb.append("共准备导入");
 		sb.append("【");
@@ -33,6 +34,7 @@ public class ImportReport {
 		sb.append("/");
 		sb.append(sheets.stream().mapToInt(it -> it.rowsTotal).sum());
 		sb.append("】");
+		sb.append("行");
 		sb.append("\r\n");
 		for (SheetImportReport sheet : sheets) {
 			sb.append("===============\r\n");
@@ -85,14 +87,14 @@ public class ImportReport {
 
 		@Override
 		public String toString() {
-			StringBuilder sb = new StringBuilder().append("《").append(sheetName).append("》");;
+			StringBuilder sb = new StringBuilder().append("《").append(sheetName).append("》");
 			if (isIgnored()) {
 				sb.append("（已忽略）");
 				sb.append(" - ");
 				sb.append(ignoredReason);
 			} else {
 				sb.append(" - ");
-				sb.append("准备导入").append("【").append(rowsReady).append("/").append(rowsTotal).append("】");
+				sb.append("准备导入").append("【").append(rowsReady).append("/").append(rowsTotal).append("】").append("行");
 			}
 
 			if (rowsIgnored > 0) {

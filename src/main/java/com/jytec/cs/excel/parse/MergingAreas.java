@@ -20,6 +20,11 @@ public interface MergingAreas {
 		}
 		return null;
 	}
+	
+	static int getCellRowSpan(Cell cell) {
+		CellRangeAddress cra = getMergingArea(cell);
+		return cra==null ? 1 : (cra.getLastRow()-cra.getFirstRow() + 1);
+	}
 
 	/** Copy EXACTLY from {@link SheetUtil#getCell(Sheet, int, int)} */
 	static Cell getCell(Sheet sheet, int rowIx, int colIx) {

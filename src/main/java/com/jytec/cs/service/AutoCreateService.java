@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import com.jytec.cs.dao.SiteRepository;
 import com.jytec.cs.dao.TeacherRepository;
@@ -19,9 +20,8 @@ public class AutoCreateService {
 	private @Autowired TeacherRepository teacherRepository;
 	private @Autowired SiteRepository siteRepository;
 
-	/** 
-	 * used when data-appeared-completely in importing resources. <p>
-	 * if model exits will try to update code.  
+	/**
+	 * used when data-appeared-completely in importing resources. <p> if model exits will try to update code.
 	 */
 	public Teacher findTeacherByNameOrCreateWithCode(String name, String code) {
 		Optional<Teacher> oteacher = teacherRepository.findByName(name);
@@ -49,10 +49,7 @@ public class AutoCreateService {
 	public Teacher createTeacherWithAutoCode(String name, boolean save) {
 		Teacher teacher = new Teacher();
 		teacher.setName(name);
-		teacher = teacherRepository.save(teacher);
-		teacher.setCode("T" + teacher.getId()); // code strategy.
-		log.info("自动创建教师【" + name + "】－code【" + teacher.getCode() + "】");
-		if(save) {
+		if (save) {
 			return teacherRepository.save(teacher);
 		}
 		return teacher;
@@ -61,13 +58,32 @@ public class AutoCreateService {
 	public Site createSiteWithAutoCode(String name, boolean save) {
 		Site site = new Site();
 		site.setName(name);
-		site = siteRepository.save(site);
-		site.setCode("T" + site.getId()); // code strategy.
-		log.info("自动创建场地【" + name + "】－code【" + site.getCode() + "】");
-		if(save) {
-			return siteRepository.save(site);	
+		if (save) {
+			return this.save(site);
 		}
 		return site;
+	}
+
+	public Site save(Site newSiteWithoutCode) {
+		Site e = newSiteWithoutCode;
+		boolean expect = e.getId() == 0 && (e.getCode() == null || e.getCode().isEmpty());
+		Assert.isTrue(expect, "此方法仅适用于新建且无 Code 的上课场所！！！");
+		Assert.isTrue(e.getName() != null && !e.getName().isEmpty(), "name 不应为空！！！");
+		Site saved = siteRepository.save(e);
+		saved.setCode("T" + saved.getId()); // code strategy.
+		log.info("自动创建场地【" + saved.getName() + "】－code【" + saved.getCode() + "】");
+		return siteRepository.save(saved);
+	}
+	
+	public Teacher save(Teacher newTeacherWithoutCode) {
+		Teacher e = newTeacherWithoutCode;
+		boolean expect = e.getId() == 0 && (e.getCode() == null || e.getCode().isEmpty());
+		Assert.isTrue(expect, "此方法仅适用于新建且无 Code 的教室！！！");
+		Assert.isTrue(e.getName() != null && !e.getName().isEmpty(), "name 不应为空！！！");
+		Teacher saved = teacherRepository.save(e);
+		saved.setCode("T" + saved.getId()); // code strategy.
+		log.info("自动创建教室【" + saved.getName() + "】－code【" + saved.getCode() + "】");
+		return teacherRepository.save(saved);
 	}
 
 }

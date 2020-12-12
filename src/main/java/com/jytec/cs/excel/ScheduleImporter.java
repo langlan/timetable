@@ -45,8 +45,10 @@ public class ScheduleImporter extends AbstractImporter {
 		Assert.isTrue(context.params.classYear > 0, "参数年级不可为空！");
 
 		super.doImport(wb, context);
+		log.info("准备导入 Schedule 记录数：" + context.modelHelper.newSchedules.size());
 		if (!context.params.preview) {
 			context.modelHelper.saveStaged();
+			scheduleRespository.flush();
 			authService.assignIdcs(); // for auto-created teachers
 			scheduleRespository.updateDateByTerm(context.params.term.getId());
 		}
@@ -60,7 +62,8 @@ public class ScheduleImporter extends AbstractImporter {
 		Map<String, Set<Cell>> tnf = context.modelHelper.teacherNotFoundExceptions;
 		Map<String, Set<Cell>> snf = context.modelHelper.siteNotFoundExceptions;
 		SheetImportReport rpt = context.report;
-		cce.forEach((k, v) -> rpt.log("无法找到班级排课记录 - " + k + "－"
+		log.info("准备导入【" + rpt.rowsReady + "/" + rpt.rowsTotal + "】行" + atLocaton(sheet));
+		cce.forEach((k, v) -> rpt.log("无法找到班级选课记录 - " + k + "－"
 				+ Strings.join(v.stream().map(it -> it.getAddress().toString()).collect(Collectors.toList()), ',')));
 		tnm.forEach((k, v) -> rpt.log("教师与班级选课教师不匹配 - " + k + "－"
 				+ Strings.join(v.stream().map(it -> it.getAddress().toString()).collect(Collectors.toList()), ',')));
@@ -72,16 +75,16 @@ public class ScheduleImporter extends AbstractImporter {
 		tnm.clear();
 		tnf.clear();
 		snf.clear();
-		if (context.params.suppressClassCourseNotFoundError) {
+		if (context.params.saveOnClassCourseNotFound) {
 			context.modelHelper.hasAnyClassCourseNotFountExceptions = false;
 		}
-		if (context.params.suppressTeacherNotMatchException) {
+		if (context.params.saveOnTeacherNotMatch) {
 			context.modelHelper.hasAnyTeacherNotMatchExceptions = false;
 		}
-		if (context.params.suppressTeacherNotFoundException) {
+		if (context.params.saveOnTeacherNotFound) {
 			context.modelHelper.hasAnyTeacherNotFoundExceptions = false;
 		}
-		if (context.params.suppressTeacherNotFoundException) {
+		if (context.params.saveOnSiteNotFound) {
 			context.modelHelper.hasAnySiteNotFoundExceptions = false;
 		}
 	}
@@ -204,6 +207,7 @@ public class ScheduleImporter extends AbstractImporter {
 				// schedule.setDate(date);
 				schedule.setTimeStart(timeStart);
 				schedule.setTimeEnd(timeEnd);
+				schedule.recalcTimes();
 				schedule.setSite(site);
 				schedules.add(schedule);
 				// mhelper.stage();
@@ -237,6 +241,7 @@ public class ScheduleImporter extends AbstractImporter {
 			List<LessonTime> lessonTimes = flatTree.get(key);
 			if (lessonTimes == null) {
 				lessonTimes = new LinkedList<>();
+				flatTree.put(key, lessonTimes);
 			} else {
 				for (LessonTime lessonTime : lessonTimes) {
 					if (lessonTime.overlappedWith(ivalue)) {

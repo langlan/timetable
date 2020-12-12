@@ -114,7 +114,8 @@ public class ClassCourseImporter extends AbstractImporter {
 		log.info(rpt.log("新增班级数：" + c.classes + ", 共解析：" + staging.classesIndexedByName.size()));
 		log.info(rpt.log("新增课程数：" + c.courses + ", 共解析：" + staging.coursesIndexedByCode.size()));
 		log.info(rpt.log("新增教师数：" + c.teachers + ", 共解析：" + staging.countTeachers()));
-		log.info(rpt.log("新增班级选课数：" + c.classCourses + ", 共解析：" + staging.classesIndexedByName.size()));
+		log.info(rpt.log(
+				"新增班级选课数：" + c.classCourses + ", 共解析：" + staging.classCoursesIndexedByClassNameAndCourseCode.size()));
 	}
 
 	static class ParseResult extends AbstractParseResult {
@@ -226,8 +227,9 @@ public class ClassCourseImporter extends AbstractImporter {
 						r.teacher);
 			});
 			namesOfTeacherWithoutCode = namesOfTeacherWithoutCode.stream()
-					.filter(t -> teachersIndexedByName.get(t) != null).collect(Collectors.toSet());
-			mhelper.stageTeachersWithoutCodeIfAbsent(namesOfTeacherWithoutCode);
+					.filter(t -> !teachersIndexedByName.containsKey(t)).collect(Collectors.toSet());
+
+			namesOfTeacherWithoutCode.forEach(mhelper::stageTeacherWithoutCodeIfAbsent);
 		}
 
 		public int countTeachers() {

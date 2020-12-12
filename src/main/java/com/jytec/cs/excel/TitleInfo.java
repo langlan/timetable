@@ -4,7 +4,9 @@ import static com.jytec.cs.excel.parse.Texts.atLocaton;
 import static com.jytec.cs.excel.parse.Texts.cellString;
 import static com.jytec.cs.excel.parse.Texts.rowString;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -92,18 +94,15 @@ public class TitleInfo {
 			throw new HeaderRowNotFountException(sheet);
 		}
 		TitleInfo titleInfo = new TitleInfo();
-
+		titleInfo.headerRowIndex = headerRowIndex;
 		for (int colIndex = 0; colIndex < headerRow.getLastCellNum(); colIndex++) {
 			Cell headerCell = headerRow.getCell(colIndex);
 			String header = cellString(headerCell);
 			if (header.isEmpty())
 				continue;
-
 			if (Pattern.matches(weeknoColHeaderPattern, header)) {
+				titleInfo.headerRowSpan = MergingAreas.getCellRowSpan(headerCell); // row-span
 				titleInfo.weeknoColIndex = headerCell.getColumnIndex();
-				CellRangeAddress ma = MergingAreas.getMergingArea(headerCell);
-				titleInfo.headerRowIndex = headerRowIndex;
-				titleInfo.headerRowSpan = (ma.getLastRow() - ma.getFirstRow() + 1); // row-span
 			} else if (Pattern.matches(classNameColHeaderPattern, header)) {
 				titleInfo.classColIndex = headerCell.getColumnIndex();
 			} else if (Pattern.matches(THORY_DAY_TIME_PATTERN, header)) { // for theory-schedule
@@ -145,6 +144,21 @@ public class TitleInfo {
 				String msg = "未识别的表头【" + header + "】" + atLocaton(headerCell, false);
 				throw new HeaderRowNotFountException(msg, sheet);
 			}
+		}
+		List<String> unfoundHeaders = new ArrayList<>();
+		if (titleInfo.classColIndex == -1) {
+			unfoundHeaders.add("周数");
+		}
+		if (titleInfo.timeInfos.isEmpty()) {
+			unfoundHeaders.add("星期");
+			unfoundHeaders.add("课时");
+		}
+		// TODO: validate weeknoColIndex for training.
+		if (!unfoundHeaders.isEmpty()) {
+			throw new HeaderRowNotFountException(headerRow, unfoundHeaders.toArray(new String[unfoundHeaders.size()]));
+		}
+		if(titleInfo.headerRowSpan<=0) {
+			titleInfo.headerRowSpan = 1; // for theory-schedule.
 		}
 		return titleInfo;
 	}

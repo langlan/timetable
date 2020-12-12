@@ -18,6 +18,7 @@ import com.jytec.cs.excel.TextParser.TimeRange;
 import com.jytec.cs.excel.TitleInfo.TimeInfo;
 import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
 import com.jytec.cs.excel.parse.MergingAreas;
+import com.jytec.cs.excel.parse.Texts;
 
 @Service
 public class TrainingScheduleImporter extends ScheduleImporter {
@@ -40,9 +41,8 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 		ModelMappingHelper mhelper = context.modelHelper;
 		String classYearFilter = Integer.toString(classYear % 2000);
 
-		int imported = 0, totalRow = 0;
 		for (int rowIndex = dataFirstRowIndex; rowIndex < sheet.getLastRowNum(); rowIndex++) {
-			Row row = sheet.getRow(rowIndex);
+			Row dataRow = sheet.getRow(rowIndex);
 			Cell classCell = MergingAreas.getCellWithMerges(sheet, rowIndex, titleInfo.classColIndex);
 			Cell weekRangeCell = MergingAreas.getCellWithMerges(sheet, rowIndex, titleInfo.weeknoColIndex);
 			boolean anyCellStaged = false;
@@ -52,12 +52,15 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 			// parse class
 			String classesName = TextParser.handleMalFormedDegree(cellString(classCell));
 			if (classesName.isEmpty() || weekRange == null) {
-				String msg = "忽略无效数据行：班级列为空，周数列【" + cellString(weekRangeCell) + "】" + atLocaton(row);
-				log.info(rpt.log(msg));
+				String rowStr = Texts.rowString(dataRow);
+				if (!rowStr.isEmpty()) {
+					String msg = "忽略无效数据行：班级列为空，周数列【" + cellString(weekRangeCell) + "】" + atLocaton(dataRow);
+					log.info(rpt.log(msg));
+				}
 				continue;
 			}
 
-			totalRow++;
+			rpt.rowsTotal++;
 			log.debug("# 解析班级：【" + classesName + "】" + atLocaton(classCell));
 			Class[] pcs = TextParser.parseClasses(classesName, defaultDegree);
 			OverlappingChecker overlappingChecker = context.getAttribute(OverlappingChecker.class.getName(),
@@ -66,7 +69,7 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 				String classNameWithDegree = pc.getName() /* + "[" + pc.getDegree() + "]" */;
 
 				if (!classNameWithDegree.contains(classYearFilter)) {
-					log.info(rpt.log("忽略班级（非指定年级）：【" + classesName + "】" + atLocaton(row)));
+					log.info(rpt.log("忽略班级（非指定年级）：【" + classesName + "】" + atLocaton(dataRow)));
 					continue;
 				}
 
@@ -75,12 +78,12 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 				int count = scheduleRespository.countTrainingByClassAndTermAndWeek(pc.getName(), term.getId(),
 						weekRange.weeknoStart, weekRange.weeknoEnd);
 				if (count > 0) {
-					log.info(rpt.log("忽略班级（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(row)));
+					log.info(rpt.log("忽略班级（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(dataRow)));
 					continue;
 				}
 
 				for (Integer colIndex : titleInfo.timeInfos.keySet()) {
-					Cell scheduledCell = row.getCell(colIndex);
+					Cell scheduledCell = dataRow.getCell(colIndex);
 					TimeInfo timeInfo = titleInfo.getTimeInfo(scheduledCell);
 					String scheduleText;
 					ScheduledCourse[] scs;
@@ -110,9 +113,8 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 				} // end of each schedule-cell
 			} // end of each class
 			if (anyCellStaged)
-				imported++;
+				rpt.rowsReady++;
 		} // end of each row
-		log.info("准备导入【" + imported + "/" + totalRow + "】行，@【" + sheet.getSheetName() + "】");
 	}
 
 }

@@ -179,4 +179,9 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 		this.trainingType = trainingType;
 	}
 
+	public void recalcTimes() {
+		setTimeSpan((byte) (timeEnd - timeStart + 1));
+		setLessonSpan((byte) Math.ceil((timeEnd - timeStart + 1) / 2.0));
+	}
+
 }
