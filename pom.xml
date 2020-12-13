@@ -11,7 +11,7 @@
 	<groupId>com.github.langlan</groupId>
 	<artifactId>timetable</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>timetabe</name>
+	<name>timetable</name>
 	<description>courses management and report</description>
 
 	<properties>
