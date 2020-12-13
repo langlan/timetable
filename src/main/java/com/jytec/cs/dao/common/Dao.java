@@ -27,4 +27,8 @@ public interface Dao {
 	Map<String, Object> findUniqueMap(String ql, Object... vars);
 
 	<T> T save(T d);
+
+	int update(String ql, Object... vars);
+	
+	void flush();
 }

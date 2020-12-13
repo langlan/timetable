@@ -11,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,6 +42,7 @@ import com.jytec.cs.domain.Schedule;
 import com.jytec.cs.domain.Site;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
+import com.jytec.cs.excel.ScheduleImporter.OverlappingChecker.ClassCourseDay;
 import com.jytec.cs.excel.exceptions.ClassCourseNotFountException;
 import com.jytec.cs.excel.exceptions.ModelMappingException;
 import com.jytec.cs.service.AutoCreateService;
@@ -443,6 +445,40 @@ public class ModelMappingHelper {
 
 	public void stageAll(List<Schedule> schedules) {
 		this.newSchedules.addAll(schedules);
+	}
+
+	static class ClassCourseWeek {
+		final Schedule schedule;
+
+		public ClassCourseWeek(Schedule schedule) {
+			this.schedule = schedule;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(schedule.getTheClass().getId(), schedule.getCourse().getCode(), schedule.getWeekno());
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null || obj instanceof ClassCourseWeek) {
+				return false;
+			}
+			ClassCourseDay c = (ClassCourseDay) obj;
+			return schedule.getTheClass().getId() == c.schedule.getTheClass().getId()
+					&& schedule.getCourse().getCode().equals(c.schedule.getCourse().getCode())
+					&& schedule.getWeekno() == c.schedule.getWeekno();
+		}
+	}
+
+	private Map<ClassCourseWeek, Integer> countsOfTheoryByWeekno;
+
+	private final Map<ClassCourseWeek, Integer> countsOfTheoryByWeekno() {
+		if (countsOfTheoryByWeekno == null) {
+			List<Map<String, Object>> all = scheduleRespository.countsOfTheoryGroupByWeekIndexedByNames(term.getId());
+			
+		}
+		return countsOfTheoryByWeekno;
 	}
 
 }

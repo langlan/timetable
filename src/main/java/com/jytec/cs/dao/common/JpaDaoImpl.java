@@ -125,4 +125,15 @@ public class JpaDaoImpl implements Dao {
 		return entityInfo;
 
 	}
+
+	@Override
+	public int update(String ql, Object... vars) {
+		Query q = prepareQuery(ql, vars);
+		return q.executeUpdate();
+	}
+	
+	@Override
+	public void flush() {
+		em.flush();
+	}
 }

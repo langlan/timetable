@@ -3,36 +3,54 @@ package com.jytec.cs.service;
 import static com.jytec.cs.domain.misc.Idc.IDC_MAX_VALUE;
 import static com.jytec.cs.domain.misc.Idc.IDC_MIN_VALUE;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import com.jytec.cs.dao.IdcRepository;
 import com.jytec.cs.domain.Class;
 import com.jytec.cs.domain.Teacher;
+import com.jytec.cs.domain.misc.Idc;
+import com.jytec.cs.excel.parse.Texts;
 
 @Service
 public class AuthService extends CommonService {
+	private Log log = LogFactory.getLog(AuthService.class);
+	private @Autowired IdcRepository idcRepository;
 
 	@Transactional
 	public void assignIdcs() {
+		// try restore first
+		assignFromBackup();
+
 		List<Teacher> teachers = dao.find("Select t From Teacher t Where t.idc is Null");
 		List<Integer> idcs = generateIdcs(teachers.size(), Teacher.class);
 		int index = 0;
 		for (Teacher teacher : teachers) {
 			teacher.setIdc(idcs.get(index++));
 			dao.save(teacher);
-//			Idc idc = new Idc();
-//			idc.setId(teacher.getIdc());
-//			idc.setUsed(Idc.USED_BY_TEACHER);
-//			dao.save(idc);
 		}
 		Assert.isTrue(index == idcs.size(), "Wrong arithmetic.");
 
@@ -42,12 +60,17 @@ public class AuthService extends CommonService {
 		for (Class theClass : classes) {
 			theClass.setIdc(idcs.get(index++));
 			dao.save(theClass);
-//			Idc idc = new Idc();
-//			idc.setId(theClass.getIdc());
-//			idc.setUsed(Idc.USED_BY_CLASS);
-//			dao.save(idc);
 		}
 		Assert.isTrue(index == idcs.size(), "Wrong arithmetic.");
+
+		log.info("Assign teacher-idc for new: " + teachers.size());
+		log.info("Assign classes-idc for new: " + classes.size());
+	}
+
+	private void assignFromBackup() {
+		log.info("Reassign teacher-idc from restored: " + idcRepository.reassignTeacher());
+		log.info("Reassign classes-idc from restored: " + idcRepository.reassignClass());
+		dao.flush();
 	}
 
 	private List<Integer> generateIdcs(int size, java.lang.Class<?> entityClass) {
@@ -71,5 +94,61 @@ public class AuthService extends CommonService {
 			ret.add(r);
 		}
 		return ret;
+	}
+
+	/** Restore from backup excel file to IDC table. */
+	@Transactional
+	public void restoreIdcs(File file) throws IOException {
+		BiConsumer<Sheet, Byte> sheetConsumer = (sheet, type) -> {
+			for (int rowIndex = 1; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+				Row row = sheet.getRow(rowIndex);
+				Idc idc = new Idc();
+				idc.setId(Integer.parseInt(Texts.cellString(row.getCell(0))));
+				idc.setName(Texts.cellString(row.getCell(1)));
+				idc.setMtype(type);
+				idcRepository.save(idc);
+			}
+		};
+		try (Workbook wb = WorkbookFactory.create(file, null, true)) {
+			Sheet tsheet = wb.getSheetAt(0);
+			Sheet csheet = wb.getSheetAt(1);
+			sheetConsumer.accept(tsheet, Idc.USED_BY_TEACHER);
+			sheetConsumer.accept(csheet, Idc.USED_BY_CLASS);
+			idcRepository.flush();
+		}
+	}
+
+	@Transactional
+	public void backupIdcs(File file) throws IOException {
+		Workbook workbook = new XSSFWorkbook();
+		List<Object[]> tIdcs = dao.find("Select m.name, m.idc From Teacher m Where m.idc Is Not Null");
+		List<Object[]> tIdcs2 = dao.find("Select m.name, m.id From Idc m Where m.mtype=?", Idc.USED_BY_TEACHER);
+		List<Object[]> cIdcs = dao.find("Select m.name, m.idc From Class m Where m.idc Is Not Null");
+		List<Object[]> cIdcs2 = dao.find("Select m.name, m.id From Idc m Where m.mtype=?", Idc.USED_BY_CLASS);
+		Map<String, Object> tmap = tIdcs.stream().collect(Collectors.toMap(it -> it[0].toString(), it -> it[1]));
+		Map<String, Object> tmap2 = tIdcs2.stream().collect(Collectors.toMap(it -> it[0].toString(), it -> it[1]));
+		Map<String, Object> cmap = cIdcs.stream().collect(Collectors.toMap(it -> it[0].toString(), it -> it[1]));
+		Map<String, Object> cmap2 = cIdcs2.stream().collect(Collectors.toMap(it -> it[0].toString(), it -> it[1]));
+		tmap.putAll(tmap2);
+		cmap.putAll(cmap2);
+
+		createSheet(workbook, tmap, "教师");
+		createSheet(workbook, cmap, "班级");
+		try (FileOutputStream fos = new FileOutputStream(file)) {
+			workbook.write(fos);
+		}
+	}
+
+	private final void createSheet(Workbook workbook, Map<String, Object> map, String sheetName) {
+		Sheet sheet = workbook.createSheet(sheetName);
+		Row headerRow = sheet.createRow(0);
+		headerRow.createCell(0).setCellValue("Idc");
+		headerRow.createCell(1).setCellValue("名称");
+		int rowIndex = 1;
+		for (Map.Entry<String, Object> e : map.entrySet()) {
+			Row row = sheet.createRow(rowIndex++);
+			row.createCell(0).setCellValue(e.getValue().toString());
+			row.createCell(1).setCellValue(e.getKey());
+		}
 	}
 }

@@ -34,7 +34,7 @@ public class ImportExcelTest {
 
 	@Test
 	public void testImport00ClassCourses() throws EncryptedDocumentException, IOException {
-		File file = new File("C:/Users/langlan/Desktop/课表/basic-class-course.xls");
+		File file = Files.of("basic-class-course.xls");
 		ImportParams params = ImportParams.create().file(file).term(TermSerivcelTest.TERM);
 		ImportReport report = classCourseImporter.importFile(params.preview());
 		System.out.println(report);
@@ -43,15 +43,15 @@ public class ImportExcelTest {
 
 	@Test
 	public void testImport00Rooms() throws EncryptedDocumentException, IOException {
-		File file = new File("C:/Users/langlan/Desktop/课表/basic-rooms.xlsx");
+		File file = Files.of("/basic-rooms.xlsx");
 		ImportReport rpt = roomImporter.importFile(ImportParams.create().file(file));
 		System.out.println(rpt);
 	}
 
 	@Test
 	public void testImport01ScheduleOfTheoryCourse() throws EncryptedDocumentException, IOException {
-		File file1 = new File("C:/Users/langlan/Desktop/课表/schedule-theory-1.xlsx");
-		File file2 = new File("C:/Users/langlan/Desktop/课表/schedule-theory-2.xlsx");
+		File file1 = Files.of("/schedule-theory-1.xlsx");
+		File file2 = Files.of("/schedule-theory-2.xlsx");
 		ImportParams params = ImportParams.create().term(TermSerivcelTest.TERM).classYear(classYearFilter);
 		params.saveOnAllErrorTypes();
 
@@ -63,7 +63,7 @@ public class ImportExcelTest {
 
 	@Test
 	public void testImport021ScheduleOfTrainingCourse() throws EncryptedDocumentException, IOException {
-		File file = new File("C:/Users/langlan/Desktop/课表/schedule-training-1.xlsx");
+		File file = Files.of("/schedule-training-1.xlsx");
 		ImportParams params = ImportParams.create().term(TermSerivcelTest.TERM).classYear(classYearFilter);
 		// params.saveOnAllErrorTypes();
 
@@ -75,8 +75,8 @@ public class ImportExcelTest {
 	public void testImport022ScheduleOfTrainingCourse() throws EncryptedDocumentException, IOException {
 		ImportParams params = ImportParams.create().term(TermSerivcelTest.TERM).classYear(classYearFilter);
 		// params.saveOnAllErrorTypes();
-		File file1 = new File("C:/Users/langlan/Desktop/课表/schedule-training-21.xls");
-		File file2 = new File("C:/Users/langlan/Desktop/课表/schedule-training-22.xls");
+		File file1 = Files.of("/schedule-training-21.xls");
+		File file2 = Files.of("/schedule-training-22.xls");
 		ImportReport report1 = trainingScheduleImporter2.importFile(params.file(file1));
 		ImportReport report2 = trainingScheduleImporter2.importFile(params.file(file2).saveOnClassCourseNotFound());
 		System.out.println(report1);

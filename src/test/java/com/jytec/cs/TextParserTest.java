@@ -65,8 +65,8 @@ public class TextParserTest {
 		assertEquals(2, classes.length);
 		// range(~, without degree)
 		classes = TextParser.parseClasses("物流18-1~2", "高职");
-		assertEquals("物流18-1", classes[0].getName());
-		assertEquals("物流18-2", classes[1].getName());
+		assertEquals("物流18-1[高职]", classes[0].getName());
+		assertEquals("物流18-2[高职]", classes[1].getName());
 		assertEquals("高职", classes[0].getDegree());
 		assertEquals("高职", classes[1].getDegree());
 		assertEquals(2, classes.length);

@@ -26,6 +26,7 @@ import com.jytec.cs.domain.Schedule;
 import com.jytec.cs.domain.Site;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
+import com.jytec.cs.excel.ScheduleImporter.OverlappingChecker.ClassCourseDay;
 import com.jytec.cs.excel.TextParser.ScheduledCourse;
 import com.jytec.cs.excel.TextParser.TimeRange;
 import com.jytec.cs.excel.TitleInfo.TimeInfo;
@@ -269,7 +270,7 @@ public class ScheduleImporter extends AbstractImporter {
 
 		}
 
-		class ClassCourseDay {
+		static class ClassCourseDay {
 			final Schedule schedule;
 
 			public ClassCourseDay(Schedule schedule) {
