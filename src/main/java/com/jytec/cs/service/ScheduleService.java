@@ -23,7 +23,7 @@ public class ScheduleService extends ModelService<Schedule> {
 		Sql ql = new Sql().select("m").from("Schedule m").where() //@formatter:off
 			.apply(it -> applySearchParams(it, params))
 		.endWhere()
-		.orderBy("date,timeStart"); //@formatter:on
+		.orderBy("date,timeStart,m.site.id,m.theClass.major.id"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 
