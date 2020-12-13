@@ -96,6 +96,7 @@
 
 	<build>
 		<finalName>${artifactId}</finalName>
+		<defaultGoal>package</defaultGoal>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
