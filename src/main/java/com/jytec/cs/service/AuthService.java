@@ -6,8 +6,11 @@ import static com.jytec.cs.domain.misc.Idc.IDC_MIN_VALUE;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +103,7 @@ public class AuthService extends CommonService {
 	@Transactional
 	public void restoreIdcs(File file) throws IOException {
 		BiConsumer<Sheet, Byte> sheetConsumer = (sheet, type) -> {
-			for (int rowIndex = 1; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+			for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
 				Row row = sheet.getRow(rowIndex);
 				Idc idc = new Idc();
 				idc.setId(Integer.parseInt(Texts.cellString(row.getCell(0))));
@@ -118,8 +121,15 @@ public class AuthService extends CommonService {
 		}
 	}
 
+	/**
+	 * e.g. backupIdcs("/data/backup", "idcs-")
+	 * @param dir      the backup dir.
+	 * @param fileNamePrefix fileName without suffix(extension-name).
+	 * @return created-file(dir+fileNamePrefix+yyyyMMddHHmmss.xlsx)
+	 * @throws IOException
+	 */
 	@Transactional
-	public void backupIdcs(File file) throws IOException {
+	public File backupIdcs(File dir, String fileNamePrefix) throws IOException {
 		Workbook workbook = new XSSFWorkbook();
 		List<Object[]> tIdcs = dao.find("Select m.name, m.idc From Teacher m Where m.idc Is Not Null");
 		List<Object[]> tIdcs2 = dao.find("Select m.name, m.id From Idc m Where m.mtype=?", Idc.USED_BY_TEACHER);
@@ -134,9 +144,15 @@ public class AuthService extends CommonService {
 
 		createSheet(workbook, tmap, "教师");
 		createSheet(workbook, cmap, "班级");
+		DateFormat format = new SimpleDateFormat("yyyMMddHHmmss");
+		fileNamePrefix = fileNamePrefix + format.format(new Date()) + ".xlsx";
+		File file = new File(dir, fileNamePrefix);
+		file.getParentFile().mkdirs();
+
 		try (FileOutputStream fos = new FileOutputStream(file)) {
 			workbook.write(fos);
 		}
+		return file;
 	}
 
 	private final void createSheet(Workbook workbook, Map<String, Object> map, String sheetName) {

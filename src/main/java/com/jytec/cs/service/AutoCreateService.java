@@ -50,7 +50,7 @@ public class AutoCreateService {
 		Teacher teacher = new Teacher();
 		teacher.setName(name);
 		if (save) {
-			return teacherRepository.save(teacher);
+			return this.save(teacher);
 		}
 		return teacher;
 	}
@@ -69,6 +69,7 @@ public class AutoCreateService {
 		boolean expect = e.getId() == 0 && (e.getCode() == null || e.getCode().isEmpty());
 		Assert.isTrue(expect, "此方法仅适用于新建且无 Code 的上课场所！！！");
 		Assert.isTrue(e.getName() != null && !e.getName().isEmpty(), "name 不应为空！！！");
+		
 		Site saved = siteRepository.save(e);
 		saved.setCode("T" + saved.getId()); // code strategy.
 		log.info("自动创建场地【" + saved.getName() + "】－code【" + saved.getCode() + "】");
@@ -78,11 +79,12 @@ public class AutoCreateService {
 	public Teacher save(Teacher newTeacherWithoutCode) {
 		Teacher e = newTeacherWithoutCode;
 		boolean expect = e.getId() == 0 && (e.getCode() == null || e.getCode().isEmpty());
-		Assert.isTrue(expect, "此方法仅适用于新建且无 Code 的教室！！！");
+		Assert.isTrue(expect, "此方法仅适用于新建且无 Code 的教师！！！");
 		Assert.isTrue(e.getName() != null && !e.getName().isEmpty(), "name 不应为空！！！");
+		
 		Teacher saved = teacherRepository.save(e);
 		saved.setCode("T" + saved.getId()); // code strategy.
-		log.info("自动创建教室【" + saved.getName() + "】－code【" + saved.getCode() + "】");
+		log.info("自动创建教师【" + saved.getName() + "】－code【" + saved.getCode() + "】");
 		return teacherRepository.save(saved);
 	}
 

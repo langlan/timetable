@@ -1,6 +1,7 @@
 package com.jytec.cs.excel;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -172,13 +173,11 @@ public interface TextParser {
 	}
 
 	// ========== Schedule ============
-	static final Pattern TIME_RANGE = Pattern.compile("(\\d+)(-(\\d+))?(单|双)?\\((\\d+),(\\d+)\\)");
-
 	public class TimeRange {
-		public byte weeknoStart, weeknoEnd;
 		public byte timeStart, timeEnd;
-		/** true: odd week only | false: even week only | null: no exclusion. */
-		public Boolean oddWeekOnly;
+		// /** true: odd week only | false: even week only | null: no exclusion. */
+		// public Boolean oddWeekOnly;
+		public byte[] weeknos;
 	}
 
 	public class ScheduledCourse {
@@ -188,21 +187,62 @@ public interface TextParser {
 		public String teacher;
 	}
 
+	static final Pattern WEEK = Pattern.compile("(\\d+)-(\\d+)?");
+	static final Pattern TIME_RANGE = Pattern.compile("^([\\d-,]+)" // 1: week or weeks
+			+ "(单|双)?" // 2:
+			+ "\\((\\d+),(\\d+)\\)"); // 3,4: time range
+
+	/**
+	 * <!--@formatter:off-->
+	 * <ul>
+	 *   <li>1-6(3,4): schedule-theory-1.xlsx</li>   
+	 *   <li>1-2,4-6(3,4): schedule-theory-1.xlsx</li>  
+	 *   <li>4-6双(1,2): schedule-theory-1.xlsx</li>  
+	 *   <li>1-3单(7,8): schedule-theory-1.xlsx</li>  
+	 * </ul>
+	 * <!--@formatter:on-->
+	 * @param timeRange
+	 * @return
+	 */
 	public static TimeRange parseTimeRange(String timeRange) {
 		Matcher m = TIME_RANGE.matcher(timeRange);
-		if (m.find()) {
+		if (m.matches()) {
 			TimeRange ret = new TimeRange();
-			ret.weeknoStart = Byte.parseByte(m.group(1));
-			ret.weeknoEnd = m.group(3) == null ? ret.weeknoStart : Byte.parseByte(m.group(3));
-			if (m.group(4) != null) {
-				ret.oddWeekOnly = m.group(4).equals("单");
+			Boolean oddWeekOnly = null;
+			if (m.group(2) != null) {
+				oddWeekOnly = m.group(2).equals("单");
 			}
-
-			ret.timeStart = Byte.parseByte(m.group(5));
-			ret.timeEnd = Byte.parseByte(m.group(6));
+			String _week_ = m.group(1);
+			String[] weekTexts = _week_.split(",");
+			List<Byte> weeknos = new LinkedList<>();
+			for (String weekText : weekTexts) {
+				Matcher wm = WEEK.matcher(weekText);
+				wm.matches();
+				byte weeknoStart = Byte.parseByte(wm.group(1));
+				String weeknoEndStr = wm.group(2);
+				byte weeknoEnd = weeknoEndStr != null ? Byte.parseByte(weeknoEndStr) : weeknoStart;
+				for (byte weekno = weeknoStart; weekno <= weeknoEnd; weekno++) {
+					if (oddWeekOnly != null && ((weekno % 2 == 0) == oddWeekOnly)) {
+						continue; // exclude even when odd-only, or exclude odd when even-only
+					}
+					weeknos.add(weekno);
+				}
+			}
+			ret.weeknos = toPrimitives(weeknos.toArray(new Byte[weeknos.size()]));
+			ret.timeStart = Byte.parseByte(m.group(3));
+			ret.timeEnd = Byte.parseByte(m.group(4));
 			return ret;
 		}
 		return null;
+	}
+
+	static byte[] toPrimitives(Byte[] oBytes) {
+		byte[] bytes = new byte[oBytes.length];
+		for (int i = 0; i < oBytes.length; i++) {
+			bytes[i] = oBytes[i];
+		}
+		return bytes;
+
 	}
 
 	/**
@@ -229,7 +269,7 @@ public interface TextParser {
 		return ret;
 	}
 
-	public static ScheduledCourse[] parseTrainingSchedule(String text, TimeRange weekRange, TimeInfo timeRange) {
+	public static ScheduledCourse[] parseTrainingSchedule(String text, byte[] weeknos, TimeInfo timeRange) {
 		String[] lines = breakLines(text);
 		ScheduledCourse[] ret = new ScheduledCourse[lines.length];
 		for (int i = 0; i < lines.length; i++) {
@@ -242,9 +282,8 @@ public interface TextParser {
 			schedule.site = values[1].trim();
 			schedule.teacher = values[2].trim();
 			schedule.timeRange = new TimeRange();
-			if (weekRange != null) {
-				schedule.timeRange.weeknoStart = weekRange.weeknoStart;
-				schedule.timeRange.weeknoEnd = weekRange.weeknoEnd;
+			if (weeknos != null) {
+				schedule.timeRange.weeknos = weeknos;
 			}
 			if (timeRange != null) {
 				schedule.timeRange.timeStart = timeRange.timeStart;
@@ -257,14 +296,17 @@ public interface TextParser {
 
 	final Pattern WEEK_RANGE = Pattern.compile("(\\d+)(?:[^\\d]+(\\d+))?");
 
-	public static TimeRange parseTrainingWeeknoRange(String text) {
+	public static byte[] parseTrainingWeeknoRange(String text) {
 		Matcher m = WEEK_RANGE.matcher(text);
 		if (m.find()) {
-			TimeRange ret = new TimeRange();
-			ret.weeknoStart = Byte.parseByte(m.group(1));
+			byte weeknoStart = Byte.parseByte(m.group(1));
 			String weeknoEndStr = m.group(2);
-			ret.weeknoEnd = (weeknoEndStr != null ? Byte.parseByte(weeknoEndStr) : ret.weeknoStart);
-			return ret;
+			byte weeknoEnd = (weeknoEndStr != null ? Byte.parseByte(weeknoEndStr) : weeknoStart);
+			Byte[] ret = new Byte[weeknoEnd - weeknoStart];
+			for (int i = 0; i < ret.length; i++) {
+				ret[i] = (byte) (weeknoStart + i);
+			}
+			return toPrimitives(ret);
 		}
 		return null;
 	}

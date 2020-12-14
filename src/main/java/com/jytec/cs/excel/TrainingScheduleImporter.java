@@ -48,10 +48,10 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 			boolean anyCellStaged = false;
 
 			// parse weekno-range
-			TimeRange weekRange = TextParser.parseTrainingWeeknoRange(cellString(weekRangeCell));
+			byte[] weeknos = TextParser.parseTrainingWeeknoRange(cellString(weekRangeCell));
 			// parse class
 			String classesName = TextParser.handleMalFormedDegree(cellString(classCell));
-			if (classesName.isEmpty() || weekRange == null) {
+			if (classesName.isEmpty() || weeknos == null) {
 				String rowStr = Texts.rowString(dataRow);
 				if (!rowStr.isEmpty()) {
 					String msg = "忽略无效数据行：班级列为空，周数列【" + cellString(weekRangeCell) + "】" + atLocaton(dataRow);
@@ -73,14 +73,12 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 					continue;
 				}
 
-				// fixed issue : same class may have multiple rows to correspond different week-no.
-				// so we can not use term+class (use term+class+week-no instead) to determine duplicate import.
-				int count = scheduleRespository.countTrainingByClassAndTermAndWeek(pc.getName(), term.getId(),
-						weekRange.weeknoStart, weekRange.weeknoEnd);
-				if (count > 0) {
-					log.info(rpt.log("忽略班级（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(dataRow)));
-					continue;
-				}
+//				int count = scheduleRespository.countTrainingByClassAndTermAndWeek(pc.getName(), term.getId(),
+//						weeknos);
+//				if (count > 0) {
+//					log.info(rpt.log("忽略班级（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(dataRow)));
+//					continue;
+//				}
 
 				for (Integer colIndex : titleInfo.timeInfos.keySet()) {
 					Cell scheduledCell = dataRow.getCell(colIndex);
@@ -93,7 +91,7 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 
 					// parse schedule
 					try {
-						scs = TextParser.parseTrainingSchedule(scheduleText, weekRange, timeInfo);
+						scs = TextParser.parseTrainingSchedule(scheduleText, weeknos, timeInfo);
 					} catch (Exception e) {
 						throw new IllegalStateException("实训课表数据格式有误【" + scheduleText + "】" + atLocaton(scheduledCell));
 					}

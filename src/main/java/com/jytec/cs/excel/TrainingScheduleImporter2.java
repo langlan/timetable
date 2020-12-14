@@ -115,10 +115,10 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 			DataRowSpan drs = new DataRowSpan(dataRow, titleInfo);
 			boolean anyCellImported = false;
 			// parse weekno-range
-			TimeRange weekRange = TextParser.parseTrainingWeeknoRange(cellString(weekRangeCell));
+			byte[] weeknos= TextParser.parseTrainingWeeknoRange(cellString(weekRangeCell));
 			// parse class
 			String classesName = TextParser.handleMalFormedDegree(cellString(classCell));
-			if (classesName.isEmpty() || weekRange == null) {
+			if (classesName.isEmpty() || weeknos == null) {
 				throw new IllegalStateException("请勿在表头与实操地点之间保留空行！");
 			} else if (!classesName.contains(classYearFilter)) {
 				log.info(rpt.log("忽略整行（不包含指定年级的班级）：【" + classesName + "】" + atLocaton(dataRow, false)));
@@ -149,15 +149,6 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 					continue;
 				}
 
-				// fixed issue : same class may have multiple rows to correspond different week-no.
-				// so we can not use term+class (use term+class+week-no instead) to determine duplicate import.
-				int count = scheduleRespository.countTrainingByClassAndTermAndWeek(pc.getName(), term.getId(),
-						weekRange.weeknoStart, weekRange.weeknoEnd);
-				if (count > 0) {
-					log.info(rpt.log("忽略班级（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(dataRow)));
-					continue;
-				}
-
 				for (Integer colIndex : titleInfo.timeInfos.keySet()) {
 					Cell scheduledCell = dataRow.getCell(colIndex);
 					TimeInfo timeInfo = titleInfo.getTimeInfo(scheduledCell);
@@ -170,8 +161,7 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 					sc.course = courseName;
 					sc.site = trainingSite.getName();
 					sc.timeRange = new TimeRange();
-					sc.timeRange.weeknoStart = weekRange.weeknoStart;
-					sc.timeRange.weeknoEnd = weekRange.weeknoEnd;
+					sc.timeRange.weeknos = weeknos;
 					sc.timeRange.timeStart = timeInfo.timeStart;
 					sc.timeRange.timeEnd = timeInfo.timeEnd;
 

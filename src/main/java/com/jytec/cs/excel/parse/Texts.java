@@ -90,4 +90,12 @@ public interface Texts {
 		return Messages.format("at-sheet", sheet.getSheetName());
 	}
 
+	static boolean isNotEmpty(String str) {
+		return !isEmpty(str);
+	}
+	
+	static boolean isEmpty(String str) {
+		return str==null || str.isEmpty();
+	}
+
 }

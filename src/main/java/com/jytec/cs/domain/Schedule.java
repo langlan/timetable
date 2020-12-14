@@ -184,4 +184,19 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 		setLessonSpan((byte) Math.ceil((timeEnd - timeStart + 1) / 2.0));
 	}
 
+	public static Schedule of(long classId, String courseCode, byte weekno) {
+		Schedule ret = new Schedule();
+		ret.setTheClass(Class.of(classId));
+		ret.setCourse(Course.of(courseCode));
+		ret.setWeekno(weekno);
+		return ret;
+	}
+
+	public static Schedule of(ClassCourse classCourse, byte weekno) {
+		Schedule ret = new Schedule();
+		ret.setTheClass(classCourse.getTheClass());
+		ret.setCourse(classCourse.getCourse());
+		ret.setWeekno(weekno);
+		return ret;
+	}
 }

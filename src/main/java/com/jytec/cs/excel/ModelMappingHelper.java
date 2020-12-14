@@ -1,5 +1,7 @@
 package com.jytec.cs.excel;
 
+import static com.jytec.cs.domain.Schedule.COURSE_TYPE_NORMAL;
+import static com.jytec.cs.domain.Schedule.COURSE_TYPE_TRAINING;
 import static com.jytec.cs.excel.parse.Texts.atLocaton;
 import static langlan.sql.weaver.u.Variables.isNotEmpty;
 import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
@@ -42,7 +44,6 @@ import com.jytec.cs.domain.Schedule;
 import com.jytec.cs.domain.Site;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
-import com.jytec.cs.excel.ScheduleImporter.OverlappingChecker.ClassCourseDay;
 import com.jytec.cs.excel.exceptions.ClassCourseNotFountException;
 import com.jytec.cs.excel.exceptions.ModelMappingException;
 import com.jytec.cs.service.AutoCreateService;
@@ -451,6 +452,9 @@ public class ModelMappingHelper {
 		final Schedule schedule;
 
 		public ClassCourseWeek(Schedule schedule) {
+			Assert.notNull(schedule.getTheClass().getId(), "classId cannot be null");
+			Assert.notNull(schedule.getCourse().getCode(), "courseCode cannot be null");
+			Assert.isTrue(schedule.getWeekno() != 0, "week no cannot be null");
 			this.schedule = schedule;
 		}
 
@@ -461,24 +465,66 @@ public class ModelMappingHelper {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (obj == null || obj instanceof ClassCourseWeek) {
+			if (obj == null || !(obj instanceof ClassCourseWeek)) {
 				return false;
 			}
-			ClassCourseDay c = (ClassCourseDay) obj;
+			ClassCourseWeek c = (ClassCourseWeek) obj;
 			return schedule.getTheClass().getId() == c.schedule.getTheClass().getId()
 					&& schedule.getCourse().getCode().equals(c.schedule.getCourse().getCode())
 					&& schedule.getWeekno() == c.schedule.getWeekno();
 		}
 	}
 
-	private Map<ClassCourseWeek, Integer> countsOfTheoryByWeekno;
+	private Map<ClassCourseWeek, Integer> countsOfTheoryByWeekno, countsOfTrainingByWeekno;
 
 	private final Map<ClassCourseWeek, Integer> countsOfTheoryByWeekno() {
 		if (countsOfTheoryByWeekno == null) {
-			List<Map<String, Object>> all = scheduleRespository.countsOfTheoryGroupByWeekIndexedByNames(term.getId());
-			
+			countsOfTheoryByWeekno = new HashMap<>();
+			List<Map<String, Object>> all = scheduleRespository.countsOfEachWeek(term.getId(), COURSE_TYPE_NORMAL);
+			all.forEach(e -> {
+				Schedule s = Schedule.of((long) e.get("classId"), (String) e.get("courseCode"), (byte) e.get("weekno"));
+				ClassCourseWeek key = new ClassCourseWeek(s);
+				int cnt = ((Number) e.get("cnt")).intValue();
+				countsOfTheoryByWeekno.put(key, cnt);
+			});
 		}
 		return countsOfTheoryByWeekno;
 	}
+	
+	private Map<ClassCourseWeek, Integer> countsOfTrainingByWeekno() {
+		if (countsOfTrainingByWeekno == null) {
+			countsOfTrainingByWeekno = new HashMap<>();
+			List<Map<String, Object>> all = scheduleRespository.countsOfEachWeek(term.getId(), COURSE_TYPE_TRAINING);
+			all.forEach(e -> {
+				Schedule s = Schedule.of((long) e.get("classId"), (String) e.get("courseCode"), (byte) e.get("weekno"));
+				ClassCourseWeek key = new ClassCourseWeek(s);
+				int cnt = ((Number) e.get("cnt")).intValue();
+				countsOfTheoryByWeekno.put(key, cnt);
+			});
+		}
+		return countsOfTrainingByWeekno;
+	}
+
+	public int countTheoryCourseByWeek(ClassCourse classCourse, byte... weeknos) {
+		int total = 0;
+		for (byte weekno : weeknos) {
+			ClassCourseWeek ccw = new ClassCourseWeek(Schedule.of(classCourse, weekno));
+			Integer cnt = countsOfTheoryByWeekno().get(ccw);
+			total += (cnt != null ? cnt : 0);
+		}
+		return total;
+	}
+
+	public int countTrainingByWeek(ClassCourse classCourse, String id, byte[] weeknos) {
+		int total = 0;
+		for (byte weekno : weeknos) {
+			ClassCourseWeek ccw = new ClassCourseWeek(Schedule.of(classCourse, weekno));
+			Integer cnt = countsOfTrainingByWeekno().get(ccw);
+			total += (cnt != null ? cnt : 0);
+		}
+		return total;
+	}
+
+	// countOfTheoryByWeek();
 
 }

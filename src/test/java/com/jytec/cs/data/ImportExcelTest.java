@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.jytec.cs.dao.ScheduleRepository;
 import com.jytec.cs.dao.SiteRepository;
+import com.jytec.cs.domain.Schedule;
 import com.jytec.cs.domain.Site;
 import com.jytec.cs.excel.ClassCourseImporter;
 import com.jytec.cs.excel.ScheduleImporter;
@@ -20,6 +21,7 @@ import com.jytec.cs.excel.TrainingScheduleImporter;
 import com.jytec.cs.excel.TrainingScheduleImporter2;
 import com.jytec.cs.excel.api.ImportParams;
 import com.jytec.cs.excel.api.ImportReport;
+import com.jytec.cs.service.AuthService;
 
 @SpringBootTest
 public class ImportExcelTest {
@@ -30,10 +32,12 @@ public class ImportExcelTest {
 	private @Autowired TrainingScheduleImporter2 trainingScheduleImporter2;
 	private @Autowired ScheduleRepository scheduleRepository;
 	private @Autowired SiteRepository siteRepository;
-	int classYearFilter = 20;
+	private @Autowired AuthService authService;
+	int classYearFilter = 19;
 
 	@Test
 	public void testImport00ClassCourses() throws EncryptedDocumentException, IOException {
+		authService.restoreIdcs(AuthServiceTest.lastBackupFile);
 		File file = Files.of("basic-class-course.xls");
 		ImportParams params = ImportParams.create().file(file).term(TermSerivcelTest.TERM);
 		ImportReport report = classCourseImporter.importFile(params.preview());
@@ -56,9 +60,9 @@ public class ImportExcelTest {
 		params.saveOnAllErrorTypes();
 
 		ImportReport rpt1 = scheduleImporter.importFile(params.file(file1));
-		ImportReport rpt2 = scheduleImporter.importFile(params.file(file2));
+		// ImportReport rpt2 = scheduleImporter.importFile(params.file(file2));
 		System.out.println(rpt1);
-		System.out.println(rpt2);
+		// System.out.println(rpt2);
 	}
 
 	@Test
@@ -85,12 +89,12 @@ public class ImportExcelTest {
 
 	@Test
 	public void testCountsGroupByWeek() {
-		List<Map<String, Object>> counts = scheduleRepository
-				.countsOfTheoryGroupByWeekIndexedByNames(TermSerivcelTest.TERM.getId());
+		List<Map<String, Object>> counts = scheduleRepository.countsOfEachWeek(TermSerivcelTest.TERM.getId(),
+				Schedule.COURSE_TYPE_NORMAL);
 		for (Map<String, Object> count : counts) {
-			System.out.print(count.get("className"));
+			System.out.print(count.get("classId"));
 			System.out.print(" - ");
-			System.out.print(count.get("courseName"));
+			System.out.print(count.get("courseCode"));
 			System.out.print(" - ");
 			System.out.print(count.get("weekno"));
 			System.out.print(" - ");

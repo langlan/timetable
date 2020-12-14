@@ -26,7 +26,6 @@ import com.jytec.cs.domain.Schedule;
 import com.jytec.cs.domain.Site;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
-import com.jytec.cs.excel.ScheduleImporter.OverlappingChecker.ClassCourseDay;
 import com.jytec.cs.excel.TextParser.ScheduledCourse;
 import com.jytec.cs.excel.TextParser.TimeRange;
 import com.jytec.cs.excel.TitleInfo.TimeInfo;
@@ -126,7 +125,7 @@ public class ScheduleImporter extends AbstractImporter {
 			ModelMappingHelper mhelper = context.modelHelper;
 
 			// loop each cell in data-row
-			boolean importedAnyCell = false;
+			boolean hasAnyNonEmptyCell = false, importedAnyCell = false;
 			for (int colIndex = 0; colIndex < dataRow.getLastCellNum(); colIndex++) {
 				Cell scheduledCell = dataRow.getCell(colIndex);
 				TimeInfo timeInfo;
@@ -135,7 +134,7 @@ public class ScheduleImporter extends AbstractImporter {
 				// Empty cell or not schedule column
 				if ((timeInfo = (titleInfo.getTimeInfo(scheduledCell))) == null || scheduleText.isEmpty())
 					continue;
-
+				hasAnyNonEmptyCell = true;
 				ScheduledCourse[] scs;
 
 				// parse schedule
@@ -144,18 +143,20 @@ public class ScheduleImporter extends AbstractImporter {
 				} catch (Exception e) {
 					throw new IllegalStateException("课表数据格式有误【" + scheduleText + "】" + atLocaton(scheduledCell));
 				}
+
 				List<Schedule> schedules = generateParseResult(classNameWithDegree, scs, scheduledCell, timeInfo, term,
 						mhelper);
 				overlappingChecker.addAll(schedules, scheduledCell);
 				importedAnyCell = !schedules.isEmpty();
 				mhelper.stageAll(schedules);
 			}
+			if (!hasAnyNonEmptyCell) {// 所有排课列均为空。
+				log.info(rpt.log("忽略班级（没有排课数据）：【" + classNameWithDegree + "】" + atLocaton(dataRow, false)));
+			}
 			if (importedAnyCell) {
 				rpt.rowsReady++;
 			}
 		}
-		log.info("准备导入【" + rpt.rowsReady + "/" + rpt.rowsTotal + "】行，@【" + sheet.getSheetName() + "】");
-		// Should it be called through other UI to keep data-import and date-build independent.
 	}
 
 	protected List<Schedule> generateParseResult(String classNameWithDegree, ScheduledCourse[] scs, Cell scheduledCell,
@@ -164,7 +165,6 @@ public class ScheduleImporter extends AbstractImporter {
 		List<Schedule> schedules = new LinkedList<>();
 		for (ScheduledCourse sc : scs) {
 			TimeRange times = sc.timeRange;
-			byte weeknoStart = times.weeknoStart, weeknoEnd = times.weeknoEnd;
 			byte timeStart = times.timeStart, timeEnd = times.timeEnd;
 			ClassCourse classCourse = null;
 			try {
@@ -177,13 +177,24 @@ public class ScheduleImporter extends AbstractImporter {
 			Teacher teacher = mhelper.findTeacher(sc.teacher, classCourse, scheduledCell);
 			Site site = mhelper.findSite(sc.site, scheduledCell);
 
-			if (!(this instanceof TrainingScheduleImporter))
-				if (scheduleRespository.countTheoryByCCNamesAndTermWeeks(classNameWithDegree, sc.course, term.getId(),
-						weeknoStart, weeknoEnd) > 0) {
+			// fixed issue : same class may have multiple rows to correspond different week-no.
+			// so we can not use term+class (use term+class+week-no instead) to determine duplicate import.
+			if (!(this instanceof TrainingScheduleImporter)) {
+				// int cnt = scheduleRespository.countTheoryByCCNamesAndTermWeeks(classNameWithDegree, sc.course,
+				// term.getId(),weeknoStart, weeknoEnd);
+				int cnt = mhelper.countTheoryCourseByWeek(classCourse, sc.timeRange.weeknos);
+				if (cnt > 0) {
 					log.info("忽略班级选课（对应周数内已有理论课排课记录）：【" + classNameWithDegree + "-" + sc.course + "】"
 							+ atLocaton(scheduledCell));
 					continue;
 				}
+			} else {
+				int count = mhelper.countTrainingByWeek(classCourse, term.getId(), sc.timeRange.weeknos);
+				if (count > 0) {
+					log.info("忽略班级选课（对应周数内已有实训排课记录）：【" + classNameWithDegree + "】" + atLocaton(scheduledCell));
+					continue;
+				}
+			}
 
 			if (timeStart != timeInfo.timeStart || timeEnd != timeInfo.timeEnd) {
 				throw new IllegalStateException("课程时间与表头时间不匹配：表头【" + timeStart + "," + timeEnd + "】，当前【"
@@ -191,11 +202,7 @@ public class ScheduleImporter extends AbstractImporter {
 			}
 
 			// try create schedule records and save.
-			for (byte weekno = weeknoStart; weekno <= weeknoEnd; weekno++) {
-				if (times.oddWeekOnly != null && ((weekno % 2 == 0) == times.oddWeekOnly)) {
-					log.debug("仅" + (times.oddWeekOnly ? "单" : "双") + "数周，排除：" + weekno + atLocaton(scheduledCell));
-					continue; // exclude even when odd-only, or exclude odd when even-only
-				}
+			for (byte weekno : times.weeknos) {
 				Schedule schedule = new Schedule();
 				schedule.setCourseType(Schedule.COURSE_TYPE_NORMAL);
 				schedule.setTerm(term);
@@ -265,7 +272,7 @@ public class ScheduleImporter extends AbstractImporter {
 			}
 
 			public boolean overlappedWith(LessonTime other) {
-				return (other.start <= start && start <= other.end) || other.overlappedWith(this);
+				return (other.start <= start && start <= other.end) || (start <= other.start && other.start <= end);
 			}
 
 		}
@@ -285,7 +292,7 @@ public class ScheduleImporter extends AbstractImporter {
 
 			@Override
 			public boolean equals(Object obj) {
-				if (obj == null || obj instanceof ClassCourseDay) {
+				if (obj == null || !(obj instanceof ClassCourseDay)) {
 					return false;
 				}
 				ClassCourseDay c = (ClassCourseDay) obj;

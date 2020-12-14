@@ -115,4 +115,10 @@ public class Class extends BaseModel<Long> {
 		this.idc = idc;
 	}
 
+	public static Class of(long classId) {
+		Class ret = new Class();
+		ret.setId(classId);
+		return ret;
+	}
+
 }

@@ -75,4 +75,10 @@ public class Course extends BaseModel<String>{
 		this.locationType = locationType;
 	}
 
+	public static Course of(String courseCode) {
+		Course ret = new Course();
+		ret.setCode(courseCode);
+		return ret;
+	}
+
 }

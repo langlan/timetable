@@ -24,6 +24,7 @@ import com.jytec.cs.domain.Site;
 import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
 import com.jytec.cs.excel.parse.Columns;
 import com.jytec.cs.excel.parse.HeaderRowNotFountException;
+import com.jytec.cs.excel.parse.Texts;
 
 @Service
 public class SiteImporter extends AbstractImporter {
@@ -94,7 +95,8 @@ public class SiteImporter extends AbstractImporter {
 				String key = site.getName() + "-" + site.getRoomType();
 				if (siteKeys.add(key)) { // check existence.
 					rpt.rowsReady++;
-					log.info(rpt.log("新增: " + key));
+					String msg = Texts.isNotEmpty(site.getName4Training()) ? (key + " - " + site.getName4Training()) : key; 
+					log.info(rpt.log("新增: " + msg));
 					// use remove not get, to compatible with same-name records.
 					Site exist = autoSitesIndexedByName.remove(site.getName());
 					if (exist != null) {

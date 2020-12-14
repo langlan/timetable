@@ -2,10 +2,8 @@ package com.jytec.cs.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.File;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +16,7 @@ import com.jytec.cs.service.AuthService;
 public class AuthServiceTest {
 	private @Autowired AuthService authService;
 	private @Autowired Dao dao;
+	public static final File lastBackupFile = Files.of("backup/idcs-20201214075450.xlsx");
 	
 	@Test
 	public void test() {
@@ -28,14 +27,12 @@ public class AuthServiceTest {
 	
 	@Test
 	public void testIdcsBackup() throws IOException {
-		DateFormat format = new SimpleDateFormat("yyyMMdd");
-		String fileName = "backup/idcs-" + format.format(new Date()) + ".xlsx";
-		authService.backupIdcs(Files.of(fileName));
+		authService.backupIdcs(Files.of("backup/"), "idcs-");
 	}
 	
 	@Test
 	public void testIdcsRestore() throws IOException {
-		authService.restoreIdcs(Files.of("backup/idcs-20201213.xlsx"));
+		authService.restoreIdcs(lastBackupFile);
 	}
 	
 	
