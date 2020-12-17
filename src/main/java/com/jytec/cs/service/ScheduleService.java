@@ -20,10 +20,10 @@ public class ScheduleService extends ModelService<Schedule> {
 
 	@Transactional
 	public List<Schedule> search(ScheduleSearchParams params) {
-		Sql ql = new Sql().select("m")//@formatter:off
+		Sql ql = new Sql().select("distinct m")//@formatter:off
 		.from("Schedule m")
-		.leftJoin("m.classes c")                    //.$(params.needJoinClasses())
-		.leftJoin("m.teachers t")                   //.$(params.needjoinTeachers())
+		.leftJoin("m.classes c")                    .$(params.needJoinClasses())
+		.leftJoin("m.teachers t")                   .$(params.needjoinTeachers())
 		.where() 
 			.apply(it -> applySearchParams(it, params))
 		.endWhere()
