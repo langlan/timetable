@@ -142,5 +142,9 @@ public class ScheduleSearchParams extends TermSearchParams {
 	public boolean needjoinTeachers() {
 		return teacherId != null;
 	}
+	
+	public boolean needJoinLessons() {
+		return false;
+	}
 
 }

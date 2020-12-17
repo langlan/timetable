@@ -80,6 +80,7 @@ public class ScheduleImporter extends AbstractImporter {
 				} else {
 					main.getClasses().addAll(e.getClasses());
 					main.setClassCount((byte) main.getClasses().size());
+					main.recalcRedundant();
 				}
 			}
 			schedules.add(main);

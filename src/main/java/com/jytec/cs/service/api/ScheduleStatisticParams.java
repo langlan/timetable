@@ -27,6 +27,7 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 		allowedGroupByProps.put("classYear", "c.year");
 		allowedGroupByProps.put("courseCate", "course.cate");
 		allowedGroupByProps.put("yearMonth", "substr({root}.date, 1, 7)");
+		allowedGroupByProps.put("lesson", "sl.lesson");
 
 		allowedCountDistinct = new HashSet<>();
 		allowedCountDistinct.addAll(Arrays.asList("classId", "courseCode", "siteId", "teacherId", "majorId", "deptId"));
@@ -119,7 +120,8 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 			StringBuilder sb = new StringBuilder();
 			String[] props = groupBy.split(",");
 			for (String prop : props) {
-				String realProp = allowedGroupByProps.get(prop.trim());
+				prop = prop.trim();
+				String realProp = allowedGroupByProps.get(prop);
 				if (realProp != null) {
 					if (sb.length() > 0) {
 						sb.append(",");
@@ -127,7 +129,8 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 					if (realProp.contains("{root}")) {
 						realProp = realProp.replaceAll("\\{root\\}", rootAlias);
 						sb.append(realProp);
-					} else if (Regex.matches(CLASS_PROPS, prop) || Regex.matches(TEACHER_PROPS, prop)) {
+					} else if (Regex.matches(CLASS_PROPS, prop) || Regex.matches(TEACHER_PROPS, prop)
+							|| "lesson".equals(prop)) {
 						sb.append(realProp); // hard code for join-alias
 					} else {
 						sb.append(rootAlias);
@@ -185,7 +188,12 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 
 	@Override
 	public boolean needjoinTeachers() {
-		return super.needjoinTeachers() || (TEACHER_PROPS != null && groupBy.matches("teacherId"))
+		return super.needjoinTeachers() || (groupBy != null && Regex.matchesPart(TEACHER_PROPS, groupBy))
 				|| (distinct != null && Regex.matchesPart(TEACHER_PROPS, distinct));
+	}
+	
+	@Override
+	public boolean needJoinLessons() {
+		return groupBy!=null && groupBy.contains("lesson");
 	}
 }

@@ -1,5 +1,6 @@
 package com.jytec.cs.domain;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,6 +13,7 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -20,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.jytec.cs.domain.Term.TermAware;
 import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
+import com.jytec.cs.domain.schedule.ScheduleLesson;
 
 @Table(uniqueConstraints = { @UniqueConstraint(columnNames = { "course_code", "site_id", //
 		"termId", "weekno", "dayOfWeek", "timeStart", "timeEnd" }) })
@@ -231,5 +234,13 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 
 	public void setClassIds(String classIds) {
 		this.classIds = classIds;
+	}
+	
+	@Transient
+	@JsonProperty("lessons")
+	@JsonRawValue
+	public String getLessons() {
+		byte[] lessons = ScheduleLesson.lessons(timeStart, timeEnd);
+		return Arrays.toString(lessons);
 	}
 }
