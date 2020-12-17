@@ -15,7 +15,7 @@ import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = { "name", "roomType" }))
-public class Site extends BaseModel<Integer>{
+public class Site extends BaseModel<Integer> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
@@ -110,6 +110,14 @@ public class Site extends BaseModel<Integer>{
 
 	public void setMemo(String memo) {
 		this.memo = memo;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Site) {
+			return id != 0 ? id == ((Site) obj).id : this == obj;
+		}
+		return false;
 	}
 
 }

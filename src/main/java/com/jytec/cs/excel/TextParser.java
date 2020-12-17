@@ -5,14 +5,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.util.Assert;
 
 import com.jytec.cs.domain.Class;
+import com.jytec.cs.domain.ClassCourse;
+import com.jytec.cs.domain.Course;
 import com.jytec.cs.domain.Dept;
 import com.jytec.cs.domain.Major;
+import com.jytec.cs.domain.Site;
+import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.TitleInfo.TimeInfo;
+import com.jytec.cs.excel.exceptions.IllegalFormatException;
 
 public interface TextParser {
 	// MajorYY-No[Degree] //
@@ -66,9 +72,10 @@ public interface TextParser {
 	}
 
 	/**
+	 * 来源：教学任务表－班级列
 	 * 
 	 * @param classNameWithDegree
-	 * @return a Class instance[name,year,classNo,degree] with major[shortName,degree] or null if not match.
+	 * @return Class[name,year,classNo,degree, major[shortName,degree]] or null if not match.
 	 */
 	public static Class parseClass(String classNameWithDegree) {
 		// String text = cell.toString();
@@ -107,7 +114,17 @@ public interface TextParser {
 			+ "(?:[\\[\\(（]+(?<degree>.+?)[\\]\\)）])?"); // degree: optional
 
 	/**
-	 * <ul> <li>standard+</li> <li>majorYear-no~no :: (with no degree or （三二）)</li> <li>majorYear级no－no（系部）::</li> </ul>
+	 * 来源于多个实训表，待规范。
+	 * <!-- @formatter:off -->
+	 * <ul> 
+	 *   <li>多个班级以空格或换行分隔</li>
+	 *   <li>多个连号班级以“~”或“-”分隔</li>
+	 *   <li>degree 后缀 :: 中文括号“（）”或英文括号“()”或英文中括号“[]”</li>
+	 *   <li>majorYear级no－no（系部）::</li> 
+	 * </ul><!-- @formatter:on -->
+	 * @param classesRangeText
+	 * @param defaultDegree 当不带 degree 后缀时需要提供。
+	 * @return
 	 */
 	public static Class[] parseClasses(String classesRangeText, String defaultDegree) {
 		List<Class> ret = new ArrayList<>();
@@ -120,6 +137,9 @@ public interface TextParser {
 			int classNoEnd = classNoEndStr != null ? Integer.parseInt(classNoEndStr) : classNoStart;
 			String degree = m.group("degree");
 			if (degree == null) {
+				if (defaultDegree == null || defaultDegree.isEmpty()) {
+					throw new IllegalArgumentException("未带 degree 后缀又未提供默认值！");
+				}
 				degree = defaultDegree;
 			}
 			Assert.isTrue(shortYear.length() == 2, "format: class-year suppose to be 2 characters.");
@@ -144,9 +164,12 @@ public interface TextParser {
 	}
 
 	/**
+	 * 来源：教学任务表单－专业列 <p>
+	 * 
+	 * 注：专业简名可从班级名前缀获取。
 	 * 
 	 * @param majorNameWithDegree name[degree]
-	 * @return the major passed in or create a Major instance with [name, degree] set. or null if pattern not match.
+	 * @return Major[name, degree]. or null if pattern not match.
 	 */
 	public static Major parseMajor(String majorNameWithDegree /* , boolean shortName */) {
 		Matcher m = MAJOR.matcher(majorNameWithDegree);
@@ -181,13 +204,37 @@ public interface TextParser {
 	}
 
 	public class ScheduledCourse {
-		public String course;
+		public String courseName;
 		public TimeRange timeRange;
-		public String site;
-		public String teacher;
+		public String siteName;
+		/** for theory always single, for training maybe multiple */
+		public String[] teacherName;
+		// for resolve
+		public List<ClassCourse> classCourses;
+		Site site;
+		public List<Teacher> teachers;
+		public byte dayOfWeek;
+		public boolean resolveSuccess;
+		
+		private void assertReslveSuccess(){
+			if (!resolveSuccess) {
+				throw new IllegalStateException("存在班级选课未找到记录异常，此处不应被调用");
+			}
+		}
+
+		public List<Class> getClasses() {
+			assertReslveSuccess();
+			return classCourses.stream().map(ClassCourse::getTheClass).collect(Collectors.toList());
+		}
+
+		public Course getCourse() {
+			assertReslveSuccess();
+			return classCourses.get(0).getCourse();
+		}
+
 	}
 
-	static final Pattern WEEK = Pattern.compile("(\\d+)-(\\d+)?");
+	static final Pattern WEEK = Pattern.compile("(\\d+)-?(\\d+)?");
 	static final Pattern TIME_RANGE = Pattern.compile("^([\\d-,]+)" // 1: week or weeks
 			+ "(单|双)?" // 2:
 			+ "\\((\\d+),(\\d+)\\)"); // 3,4: time range
@@ -217,7 +264,9 @@ public interface TextParser {
 			List<Byte> weeknos = new LinkedList<>();
 			for (String weekText : weekTexts) {
 				Matcher wm = WEEK.matcher(weekText);
-				wm.matches();
+				if (!wm.matches()) {
+					throw new IllegalFormatException("周（或周区间）格式有误：" + weekText);
+				}
 				byte weeknoStart = Byte.parseByte(wm.group(1));
 				String weeknoEndStr = wm.group(2);
 				byte weeknoEnd = weeknoEndStr != null ? Byte.parseByte(weeknoEndStr) : weeknoStart;
@@ -233,7 +282,7 @@ public interface TextParser {
 			ret.timeEnd = Byte.parseByte(m.group(4));
 			return ret;
 		}
-		return null;
+		throw new IllegalFormatException("排课时间格式错误：" + timeRange);
 	}
 
 	static byte[] toPrimitives(Byte[] oBytes) {
@@ -246,29 +295,41 @@ public interface TextParser {
 	}
 
 	/**
-	 * When multiple, split by line break.
+	 * 单个课程格式：courseName<>timeRange<>siteName<>teacherName <p>
 	 * 
-	 * @param text (courseName<>timeRange<>siteName<>teacherName)+
+	 * 多个课程之间以换行分隔
+	 * 
+	 * @param text 单元格内容（一个或多个课程）
 	 * @return an array of schedule-info
 	 */
-	public static ScheduledCourse[] parseSchedule(String text) {
+	public static ScheduledCourse[] parseSchedule(String text) throws IllegalFormatException {
 		String[] lines = breakLines(text);
 		ScheduledCourse[] ret = new ScheduledCourse[lines.length];
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
 			String[] values = line.split("<>");
 			if (values.length != 4)
-				throw new IllegalArgumentException("理论课数据格式异常（应通过<>分隔为四段）:" + line);
+				throw new IllegalFormatException("理论课数据格式异常（应通过<>分隔为四段）:" + line);
 			ScheduledCourse schedule = new ScheduledCourse();
-			schedule.course = values[0];
+			schedule.courseName = values[0];
 			schedule.timeRange = parseTimeRange(values[1]);
-			schedule.site = values[2];
-			schedule.teacher = values[3];
+			schedule.siteName = values[2];
+			String teacherName = values[3];
+			schedule.teacherName = (teacherName == null || teacherName.isEmpty() ? new String[0]
+					: new String[] { teacherName });
 			ret[i] = schedule;
 		}
 		return ret;
 	}
 
+	/**
+	 * 实训排课
+	 * 
+	 * @param text               单元格内容（一个课程）
+	 * @param weeknos            学周（可能多个，来自行头）
+	 * @param timeRange（学时，来自列头）
+	 * @return
+	 */
 	public static ScheduledCourse[] parseTrainingSchedule(String text, byte[] weeknos, TimeInfo timeRange) {
 		String[] lines = breakLines(text);
 		ScheduledCourse[] ret = new ScheduledCourse[lines.length];
@@ -278,9 +339,19 @@ public interface TextParser {
 			if (values.length != 3)
 				throw new IllegalArgumentException("import.excel.training-schedule :" + line);
 			ScheduledCourse schedule = new ScheduledCourse();
-			schedule.course = values[0].trim();
-			schedule.site = values[1].trim();
-			schedule.teacher = values[2].trim();
+			schedule.courseName = values[0].trim();
+			schedule.siteName = values[1].trim();
+			String teacherName = values[2].trim();
+			if (teacherName == null || teacherName.isEmpty()) {
+				schedule.teacherName = new String[0];
+			} else if (teacherName.contains(",")) {
+				schedule.teacherName = teacherName.split(",");
+			} else if (teacherName.contains("、")) {
+				schedule.teacherName = teacherName.split("、");
+			} else {
+				schedule.teacherName = new String[] { teacherName };
+			}
+
 			schedule.timeRange = new TimeRange();
 			if (weeknos != null) {
 				schedule.timeRange.weeknos = weeknos;
@@ -302,7 +373,7 @@ public interface TextParser {
 			byte weeknoStart = Byte.parseByte(m.group(1));
 			String weeknoEndStr = m.group(2);
 			byte weeknoEnd = (weeknoEndStr != null ? Byte.parseByte(weeknoEndStr) : weeknoStart);
-			Byte[] ret = new Byte[weeknoEnd - weeknoStart];
+			Byte[] ret = new Byte[weeknoEnd - weeknoStart + 1];
 			for (int i = 0; i < ret.length; i++) {
 				ret[i] = (byte) (weeknoStart + i);
 			}

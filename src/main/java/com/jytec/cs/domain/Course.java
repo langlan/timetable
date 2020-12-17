@@ -9,7 +9,7 @@ import javax.persistence.UniqueConstraint;
 		@UniqueConstraint(columnNames = { "code" }) //
 })
 @Entity
-public class Course extends BaseModel<String>{
+public class Course extends BaseModel<String> {
 	@Id
 	private String code;
 	private String name; // 课程名
@@ -79,6 +79,19 @@ public class Course extends BaseModel<String>{
 		Course ret = new Course();
 		ret.setCode(courseCode);
 		return ret;
+	}
+
+	@Override
+	public int hashCode() {
+		return code.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Course) {
+			return this == obj || code.equals(((Course) obj).code);
+		}
+		return false;
 	}
 
 }

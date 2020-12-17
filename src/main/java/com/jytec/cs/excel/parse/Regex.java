@@ -8,6 +8,10 @@ public interface Regex {
 	static boolean matchesPart(Pattern pattern, String input) {
 		return pattern.matcher(input).find();
 	}
+	
+	static boolean matches(Pattern pattern, String input) {
+		return pattern.matcher(input).matches();
+	}
 
 	static String group(int group, Pattern pattern, String input) {
 		Matcher m = pattern.matcher(input);

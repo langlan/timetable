@@ -25,7 +25,7 @@ public class ScheduleSearchParams extends TermSearchParams {
 	public Short classYear;
 	// course-join
 	public String courseCate;
-	
+	public Byte teacherCount, classCount;
 
 	public Map<String, Object> getMapOfNonEmpty() {
 		Field[] fields = getClass().getFields();// all public
@@ -62,11 +62,11 @@ public class ScheduleSearchParams extends TermSearchParams {
 	public void setTimeEnd(Byte timeEnd) {
 		this.timeEnd = timeEnd;
 	}
-	
+
 	public void setTimeSpan(Byte timeSpan) {
 		this.timeSpan = timeSpan;
 	}
-	
+
 	public void setLessonSpan(Byte lessonSpan) {
 		this.lessonSpan = lessonSpan;
 	}
@@ -125,6 +125,22 @@ public class ScheduleSearchParams extends TermSearchParams {
 
 	public void setCourseCate(String courseCate) {
 		this.courseCate = courseCate;
+	}
+
+	public void setTeacherCount(Byte teacherCount) {
+		this.teacherCount = teacherCount;
+	}
+
+	public void setClassCount(Byte classCount) {
+		this.classCount = classCount;
+	}
+
+	public boolean needJoinClasses() {
+		return classId != null || classYear != null || majorId != null || deptId != null;
+	}
+
+	public boolean needjoinTeachers() {
+		return teacherId != null;
 	}
 
 }

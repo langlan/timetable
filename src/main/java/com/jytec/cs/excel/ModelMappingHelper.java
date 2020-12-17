@@ -6,6 +6,7 @@ import static com.jytec.cs.excel.parse.Texts.atLocaton;
 import static langlan.sql.weaver.u.Variables.isNotEmpty;
 import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -44,7 +45,7 @@ import com.jytec.cs.domain.Schedule;
 import com.jytec.cs.domain.Site;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
-import com.jytec.cs.excel.exceptions.ClassCourseNotFountException;
+import com.jytec.cs.excel.TextParser.ScheduledCourse;
 import com.jytec.cs.excel.exceptions.ModelMappingException;
 import com.jytec.cs.service.AutoCreateService;
 
@@ -131,6 +132,7 @@ public class ModelMappingHelper {
 
 	public Site findSite(String siteName, Cell cell) {
 		if (isEmpty(siteName)) {
+			log.debug("上课地点为空：" + atLocaton(cell));
 			return null;
 		}
 		if (sitesIndexdByName == null) {
@@ -237,8 +239,6 @@ public class ModelMappingHelper {
 			}
 			hasAnyClassCourseNotFountExceptions = true;
 			cells.add(cell);
-			throw new ClassCourseNotFountException("无法找到【班级选课】记录：" + classCourseKey + atLocaton(cell));
-
 		}
 		return classCourse;
 	}
@@ -284,6 +284,15 @@ public class ModelMappingHelper {
 					.collect(Collectors.toMap(it -> it[0].toString(), it -> (ClassCourse) it[1]));
 		}
 		return classCoursesIndexedByClassNameAndCourseCode;
+	}
+
+	public Class findClassByName(String classNameWithDegree, Cell classCell) throws IllegalStateException {
+		initClassesIndexedByName();
+		Class ret = classesIndexedByName.get(classNameWithDegree);
+		if (ret == null) {
+			throw new IllegalStateException("找不到班级【" + classNameWithDegree + "】" + atLocaton(classCell));
+		}
+		return ret;
 	}
 
 	public Class findClassOrStageByName(Class cls, Major major) {
@@ -449,18 +458,20 @@ public class ModelMappingHelper {
 	}
 
 	static class ClassCourseWeek {
-		final Schedule schedule;
+		final ClassCourse classCourse;
+		final byte weekno;
 
-		public ClassCourseWeek(Schedule schedule) {
-			Assert.notNull(schedule.getTheClass().getId(), "classId cannot be null");
-			Assert.notNull(schedule.getCourse().getCode(), "courseCode cannot be null");
-			Assert.isTrue(schedule.getWeekno() != 0, "week no cannot be null");
-			this.schedule = schedule;
+		public ClassCourseWeek(ClassCourse classCourse, byte weekno) {
+			Assert.notNull(classCourse.getTheClass().getId(), "classId cannot be null");
+			Assert.notNull(classCourse.getCourse().getCode(), "courseCode cannot be null");
+			Assert.isTrue(weekno != 0, "week no cannot be null");
+			this.classCourse = classCourse;
+			this.weekno = weekno;
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(schedule.getTheClass().getId(), schedule.getCourse().getCode(), schedule.getWeekno());
+			return Objects.hash(classCourse.getTheClass().getId(), classCourse.getCourse().getCode(), weekno);
 		}
 
 		@Override
@@ -469,60 +480,74 @@ public class ModelMappingHelper {
 				return false;
 			}
 			ClassCourseWeek c = (ClassCourseWeek) obj;
-			return schedule.getTheClass().getId() == c.schedule.getTheClass().getId()
-					&& schedule.getCourse().getCode().equals(c.schedule.getCourse().getCode())
-					&& schedule.getWeekno() == c.schedule.getWeekno();
+			return classCourse.getTheClass().getId() == c.classCourse.getTheClass().getId()
+					&& classCourse.getCourse().getCode().equals(c.classCourse.getCourse().getCode())
+					&& weekno == c.weekno;
 		}
 	}
 
 	private Map<ClassCourseWeek, Integer> countsOfTheoryByWeekno, countsOfTrainingByWeekno;
 
-	private final Map<ClassCourseWeek, Integer> countsOfTheoryByWeekno() {
-		if (countsOfTheoryByWeekno == null) {
-			countsOfTheoryByWeekno = new HashMap<>();
+	private final Map<ClassCourseWeek, Integer> countsOfCourseByWeekno(String courseType) {
+		Map<ClassCourseWeek, Integer> ret = COURSE_TYPE_NORMAL.equals(courseType) ? countsOfTheoryByWeekno
+				: countsOfTrainingByWeekno;
+		if (ret == null) {
+			ret = new HashMap<>();
+			if (COURSE_TYPE_NORMAL.equals(courseType)) {
+				countsOfTheoryByWeekno = ret;
+			} else {
+				Assert.isTrue(COURSE_TYPE_TRAINING.contentEquals(courseType), "Undefined Course Type");
+				countsOfTrainingByWeekno = ret;
+			}
 			List<Map<String, Object>> all = scheduleRespository.countsOfEachWeek(term.getId(), COURSE_TYPE_NORMAL);
-			all.forEach(e -> {
-				Schedule s = Schedule.of((long) e.get("classId"), (String) e.get("courseCode"), (byte) e.get("weekno"));
-				ClassCourseWeek key = new ClassCourseWeek(s);
+			for (Map<String, Object> e : all) {
+				ClassCourse cc = ClassCourse.of((long) e.get("classId"), (String) e.get("courseCode"));
+				ClassCourseWeek key = new ClassCourseWeek(cc, (byte) e.get("weekno"));
 				int cnt = ((Number) e.get("cnt")).intValue();
-				countsOfTheoryByWeekno.put(key, cnt);
-			});
+				ret.put(key, cnt);
+			}
 		}
-		return countsOfTheoryByWeekno;
-	}
-	
-	private Map<ClassCourseWeek, Integer> countsOfTrainingByWeekno() {
-		if (countsOfTrainingByWeekno == null) {
-			countsOfTrainingByWeekno = new HashMap<>();
-			List<Map<String, Object>> all = scheduleRespository.countsOfEachWeek(term.getId(), COURSE_TYPE_TRAINING);
-			all.forEach(e -> {
-				Schedule s = Schedule.of((long) e.get("classId"), (String) e.get("courseCode"), (byte) e.get("weekno"));
-				ClassCourseWeek key = new ClassCourseWeek(s);
-				int cnt = ((Number) e.get("cnt")).intValue();
-				countsOfTheoryByWeekno.put(key, cnt);
-			});
-		}
-		return countsOfTrainingByWeekno;
+		return ret;
 	}
 
-	public int countTheoryCourseByWeek(ClassCourse classCourse, byte... weeknos) {
+	private int countsByWeek(ClassCourse classCourse, String courseType, byte... weeknos) {
+		Map<ClassCourseWeek, Integer> map = countsOfCourseByWeekno(courseType);
 		int total = 0;
 		for (byte weekno : weeknos) {
-			ClassCourseWeek ccw = new ClassCourseWeek(Schedule.of(classCourse, weekno));
-			Integer cnt = countsOfTheoryByWeekno().get(ccw);
+			ClassCourseWeek ccw = new ClassCourseWeek(classCourse, weekno);
+			Integer cnt = map.get(ccw);
 			total += (cnt != null ? cnt : 0);
 		}
 		return total;
 	}
 
-	public int countTrainingByWeek(ClassCourse classCourse, String id, byte[] weeknos) {
-		int total = 0;
-		for (byte weekno : weeknos) {
-			ClassCourseWeek ccw = new ClassCourseWeek(Schedule.of(classCourse, weekno));
-			Integer cnt = countsOfTrainingByWeekno().get(ccw);
-			total += (cnt != null ? cnt : 0);
+	public int countTheoryScheduleByWeek(ClassCourse classCourse, byte... weeknos) {
+		return countsByWeek(classCourse, COURSE_TYPE_NORMAL, weeknos);
+	}
+
+	public int countTrainingScheduleByWeek(ClassCourse classCourse, byte... weeknos) {
+		return countsByWeek(classCourse, COURSE_TYPE_TRAINING, weeknos);
+	}
+
+	public void resolve(ScheduledCourse[] scs, String[] classNames, byte dayOfWeek, Cell scheduledCell) {
+		for (ScheduledCourse sc : scs) {
+			sc.dayOfWeek = dayOfWeek;
+			sc.classCourses = new ArrayList<>(classNames.length);
+			sc.resolveSuccess = classNames.length > 0;
+			for (String classNameWithDegree : classNames) {
+				ClassCourse cc = findClassCourse(classNameWithDegree, sc.courseName, scheduledCell);
+				sc.resolveSuccess &= cc != null;
+				sc.classCourses.add(cc);
+			}
+			sc.site = findSite(sc.siteName, scheduledCell);
+			if (sc.resolveSuccess) {
+				ClassCourse cc = sc.classCourses.get(0);
+				sc.teachers = new ArrayList<>(sc.teacherName.length);
+				for (String teacherName : sc.teacherName) {
+					sc.teachers.add(findTeacher(teacherName, cc, scheduledCell));
+				}
+			}
 		}
-		return total;
 	}
 
 	// countOfTheoryByWeek();

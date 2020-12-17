@@ -101,9 +101,9 @@ public class TextParserTest {
 	public void testPraseTrainingSchedule() {
 		ScheduledCourse[] schedules = TextParser.parseTrainingSchedule("牛牛检测实训 JJ-109 吕牛牛", null, null);
 		assertEquals(1, schedules.length);
-		assertEquals("牛牛检测实训", schedules[0].course);
-		assertEquals("JJ-109", schedules[0].site);
-		assertEquals("吕牛牛", schedules[0].teacher);
+		assertEquals("牛牛检测实训", schedules[0].courseName);
+		assertEquals("JJ-109", schedules[0].siteName);
+		assertEquals("吕牛牛", schedules[0].teacherName);
 	}
 
 	@Test

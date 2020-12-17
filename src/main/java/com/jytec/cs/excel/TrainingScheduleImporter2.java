@@ -3,9 +3,11 @@ package com.jytec.cs.excel;
 import static com.jytec.cs.excel.parse.Texts.atLocaton;
 import static com.jytec.cs.excel.parse.Texts.cellString;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -115,7 +117,7 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 			DataRowSpan drs = new DataRowSpan(dataRow, titleInfo);
 			boolean anyCellImported = false;
 			// parse weekno-range
-			byte[] weeknos= TextParser.parseTrainingWeeknoRange(cellString(weekRangeCell));
+			byte[] weeknos = TextParser.parseTrainingWeeknoRange(cellString(weekRangeCell));
 			// parse class
 			String classesName = TextParser.handleMalFormedDegree(cellString(classCell));
 			if (classesName.isEmpty() || weeknos == null) {
@@ -139,47 +141,42 @@ public class TrainingScheduleImporter2 extends TrainingScheduleImporter {
 			Class[] pcs = TextParser.parseClasses(classesName, defaultDegree);
 			log.debug("# 解析班级：【" + classesName + "】" + atLocaton(dataRow));
 			Assert.isTrue(pcs.length > 0, "解析班级失败，疑似格式有误：" + classesName + atLocaton(classCell));
-			OverlappingChecker overlappingChecker = context.getAttribute(OverlappingChecker.class.getName(),
-					OverlappingChecker::new);
-			for (Class pc : pcs) {
-				String classNameWithDegree = pc.getName() /* + "[" + pc.getDegree() + "]" */;
+			List<String> cnl = Arrays.asList(pcs).stream().map(Class::getName).collect(Collectors.toList());
+			String[] classNames = cnl.toArray(new String[cnl.size()]);
+//			if (!classNameWithDegree.contains(classYearFilter)) {
+//				log.info(rpt.log("忽略班级（非指定年级）：【" + classesName + "】" + atLocaton(dataRow)));
+//				continue;
+//			}
 
-				if (!classNameWithDegree.contains(classYearFilter)) {
-					log.info(rpt.log("忽略班级（非指定年级）：【" + classesName + "】" + atLocaton(dataRow)));
+			for (Integer colIndex : titleInfo.timeInfos.keySet()) {
+				Cell scheduledCell = dataRow.getCell(colIndex);
+				TimeInfo timeInfo = titleInfo.getTimeInfo(scheduledCell);
+				String courseName = cellString(scheduledCell);
+				String teacherName = cellString(sheet.getRow(rowIndex + 1).getCell(colIndex));
+				if ((courseName).isEmpty())
 					continue;
+				ScheduledCourse sc = new ScheduledCourse();
+				sc.teacherName = teacherName.isEmpty() ? new String[0] : new String[] { teacherName };
+				sc.courseName = courseName;
+				sc.siteName = trainingSite.getName();
+				sc.timeRange = new TimeRange();
+				sc.timeRange.weeknos = weeknos;
+				sc.timeRange.timeStart = timeInfo.timeStart;
+				sc.timeRange.timeEnd = timeInfo.timeEnd;
+
+				ScheduledCourse[] scs = new ScheduledCourse[] { sc };
+				mhelper.resolve(scs, classNames, timeInfo.dayOfWeek, scheduledCell);
+				// deal with parsed schedule
+				List<Schedule> schedules = generate(scs, scheduledCell, timeInfo, term, mhelper);
+				schedules.forEach(it -> {
+					it.setCourseType(Schedule.COURSE_TYPE_TRAINING);
+					it.setTrainingType(Schedule.TRAININGTYPE_SCHOOL);
+				});
+				mhelper.stageAll(schedules);
+				if (!schedules.isEmpty()) {
+					anyCellImported = true;
 				}
-
-				for (Integer colIndex : titleInfo.timeInfos.keySet()) {
-					Cell scheduledCell = dataRow.getCell(colIndex);
-					TimeInfo timeInfo = titleInfo.getTimeInfo(scheduledCell);
-					String courseName = cellString(scheduledCell);
-					String teacherName = cellString(sheet.getRow(rowIndex + 1).getCell(colIndex));
-					if ((courseName).isEmpty())
-						continue;
-					ScheduledCourse sc = new ScheduledCourse();
-					sc.teacher = teacherName;
-					sc.course = courseName;
-					sc.site = trainingSite.getName();
-					sc.timeRange = new TimeRange();
-					sc.timeRange.weeknos = weeknos;
-					sc.timeRange.timeStart = timeInfo.timeStart;
-					sc.timeRange.timeEnd = timeInfo.timeEnd;
-
-					ScheduledCourse[] scs = new ScheduledCourse[] { sc };
-					// deal with parsed schedule
-					List<Schedule> schedules = generateParseResult(classNameWithDegree, scs, scheduledCell, timeInfo,
-							term, mhelper);
-					schedules.forEach(it -> {
-						it.setCourseType(Schedule.COURSE_TYPE_TRAINING);
-						it.setTrainingType(Schedule.TRAININGTYPE_SCHOOL);
-					});
-					overlappingChecker.addAll(schedules, scheduledCell);
-					mhelper.stageAll(schedules);
-					if (!schedules.isEmpty()) {
-						anyCellImported = true;
-					}
-				} // end of each schedule-cell
-			} // end of each class
+			} // end of each schedule-cell
 			rowIndex += drs.getDataRowSpan() - 1; // take two rows or more.
 			rpt.rowsTotal++;
 			if (anyCellImported)

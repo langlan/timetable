@@ -13,31 +13,32 @@ import com.jytec.cs.service.TermService;
 //@RepositoryRestResource(collectionResourceRel = "schedule", path = "schedule")
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
-	@Query("Select count(*) From Schedule s Where " //
-			+ "s.termId=?2 And " //
-			+ "s.theClass.name=?1 And " //
-			// + "s.theClass.degree=?2 And " //
-			+ "s.courseType='" + Schedule.COURSE_TYPE_NORMAL + "'")
-	int countNonTrainingByClassAndTerm(String className, /* String classDegree, */String termId);
+//	@Query("Select count(*) From Schedule s Where " //
+//			+ "s.termId=?2 And " //
+//			+ "s.theClass.name=?1 And " //
+//			// + "s.theClass.degree=?2 And " //
+//			+ "s.courseType='" + Schedule.COURSE_TYPE_NORMAL + "'")
+//	int countNonTrainingByClassAndTerm(String className, /* String classDegree, */String termId);
+//
+//	@Query("Select count(*) From Schedule s Where " //
+//			+ "s.theClass.name=?1 And s.course.name=?2 And " //
+//			+ "s.termId=?3 And s.weekno between ?4 And ?5 And " //
+//			+ "s.courseType='" + Schedule.COURSE_TYPE_NORMAL + "'")
+//	int countTheoryByCCNamesAndTermWeeks(String classNameWithDegree, String course, //
+//			String termId, byte weeknoStart, byte weeknoEnd);
 
-	@Query("Select count(*) From Schedule s Where " //
-			+ "s.theClass.name=?1 And s.course.name=?2 And " //
-			+ "s.termId=?3 And s.weekno between ?4 And ?5 And " //
-			+ "s.courseType='" + Schedule.COURSE_TYPE_NORMAL + "'")
-	int countTheoryByCCNamesAndTermWeeks(String classNameWithDegree, String course, //
-			String termId, byte weeknoStart, byte weeknoEnd);
-
-	@Query("Select s.theClass.id as classId, s.course.code as courseCode, s.weekno as weekno,  count(*) as cnt From Schedule s " //
+	@Query("Select c.id as classId, s.course.code as courseCode, s.weekno as weekno,  count(*) as cnt "
+			+ "From Schedule s Left Join s.classes c " //
 			+ "Where s.termId=?1 And s.courseType=?2 " //
-			+ "Group By s.theClass.id, s.course.code, s.weekno")
+			+ "Group By c.id, s.course.code, s.weekno")
 	List<Map<String, Object>> countsOfEachWeek(String termId, String courseType);
 
-	@Query("Select count(*) From Schedule s Where " //
-			+ "s.termId=?2 And " //
-			+ "s.theClass.name=?1 And " //
-			// + "s.theClass.degree=?2 And " //
-			+ "s.courseType='" + Schedule.COURSE_TYPE_TRAINING + "' And " + "s.weekno between ?3 And ?4")
-	int countTrainingByClassAndTermAndWeek(String name, String termId, byte weeknoStart, byte weeknoEnd);
+//	@Query("Select count(*) From Schedule s Where " //
+//			+ "s.termId=?2 And " //
+//			+ "s.theClass.name=?1 And " //
+//			// + "s.theClass.degree=?2 And " //
+//			+ "s.courseType='" + Schedule.COURSE_TYPE_TRAINING + "' And " + "s.weekno between ?3 And ?4")
+//	int countTrainingByClassAndTermAndWeek(String name, String termId, byte weeknoStart, byte weeknoEnd);
 
 	/**
 	 * use when rebuild/init term data, or after import schedule data.

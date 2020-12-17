@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+
+import com.jytec.cs.excel.parse.Regex;
 
 public class ScheduleStatisticParams extends ScheduleSearchParams {
 	private static final Map<String, String> allowedGroupByProps;
@@ -15,13 +18,13 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 		for (String prop : props.split(",")) {
 			allowedGroupByProps.put(prop, prop);
 		}
-		allowedGroupByProps.put("classId", "theClass.id");
 		allowedGroupByProps.put("courseCode", "course.code");
 		allowedGroupByProps.put("siteId", "site.id");
-		allowedGroupByProps.put("teacherId", "teacher.id");
-		allowedGroupByProps.put("majorId", "theClass.major.id");
-		allowedGroupByProps.put("deptId", "theClass.deptId");
-		allowedGroupByProps.put("classYear", "theClass.year");
+		allowedGroupByProps.put("teacherId", "t.id");
+		allowedGroupByProps.put("classId", "c.id");
+		allowedGroupByProps.put("majorId", "c.major.id");
+		allowedGroupByProps.put("deptId", "c.deptId");
+		allowedGroupByProps.put("classYear", "c.year");
 		allowedGroupByProps.put("courseCate", "course.cate");
 		allowedGroupByProps.put("yearMonth", "substr({root}.date, 1, 7)");
 
@@ -121,10 +124,12 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 					if (sb.length() > 0) {
 						sb.append(",");
 					}
-					if(realProp.contains("{root}")) {
+					if (realProp.contains("{root}")) {
 						realProp = realProp.replaceAll("\\{root\\}", rootAlias);
 						sb.append(realProp);
-					}else {
+					} else if (Regex.matches(CLASS_PROPS, prop) || Regex.matches(TEACHER_PROPS, prop)) {
+						sb.append(realProp); // hard code for join-alias
+					} else {
 						sb.append(rootAlias);
 						sb.append(".");
 						sb.append(realProp);
@@ -151,9 +156,13 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 						sb.append(",");
 					}
 					sb.append("Count(DISTINCT ");
-					sb.append(rootAlias);
-					sb.append(".");
-					sb.append(realProp);
+					if (Regex.matches(CLASS_PROPS, prop) || Regex.matches(TEACHER_PROPS, prop)) {
+						sb.append(realProp); // hard code for join-alias
+					} else {
+						sb.append(rootAlias);
+						sb.append(".");
+						sb.append(realProp);
+					}
 					sb.append(")");
 					sb.append(" as ");
 					sb.append(prop);
@@ -163,5 +172,20 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 			return sb.toString();
 		}
 		return "";
+	}
+
+	static Pattern CLASS_PROPS = Pattern.compile("classId|classYear|majorId|deptId");
+	static Pattern TEACHER_PROPS = Pattern.compile("classId|classYear|majorId|deptId");
+
+	@Override
+	public boolean needJoinClasses() {
+		return super.needJoinClasses() || (groupBy != null && Regex.matchesPart(CLASS_PROPS, groupBy))
+				|| (distinct != null && Regex.matchesPart(CLASS_PROPS, distinct));
+	}
+
+	@Override
+	public boolean needjoinTeachers() {
+		return super.needjoinTeachers() || (TEACHER_PROPS != null && groupBy.matches("teacherId"))
+				|| (distinct != null && Regex.matchesPart(TEACHER_PROPS, distinct));
 	}
 }

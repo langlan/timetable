@@ -84,5 +84,12 @@ public class ClassCourse extends BaseModel<Long> implements TermAware{
 	public void setTeacherNames(String teacherNames) {
 		this.teacherNames = teacherNames;
 	}
+	
+	public static ClassCourse of(long classId, String courseCode) {
+		ClassCourse ret = new ClassCourse();
+		ret.setTheClass(Class.of(classId));
+		ret.setCourse(Course.of(courseCode));
+		return ret;
+	}
 
 }

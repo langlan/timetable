@@ -1,21 +1,28 @@
 package com.jytec.cs.domain;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.jytec.cs.domain.Term.TermAware;
 import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
 
-@Table(uniqueConstraints = { @UniqueConstraint(columnNames = { "the_class_id", "course_code", "termId", "weekno", //
-		"dayOfWeek", "timeStart", "timeEnd" }) })
+@Table(uniqueConstraints = { @UniqueConstraint(columnNames = { "course_code", "site_id", //
+		"termId", "weekno", "dayOfWeek", "timeStart", "timeEnd" }) })
 @Entity
 public class Schedule extends BaseModel<Long> implements TermAware {
 	public static final String COURSE_TYPE_NORMAL = "N";
@@ -26,18 +33,10 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
-	@JsonProperty("classId")
-	@JsonSerialize(using = ModelPropAsIdSerializer.class)
-	@ManyToOne(fetch = FetchType.LAZY)
-	private Class theClass;
 	@JsonProperty("courseCode")
 	@JsonSerialize(using = ModelPropAsIdSerializer.class)
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Course course;
-	@JsonProperty("teacherId")
-	@JsonSerialize(using = ModelPropAsIdSerializer.class)
-	@ManyToOne(fetch = FetchType.LAZY)
-	private Teacher teacher;
 	@JsonProperty("siteId")
 	@JsonSerialize(using = ModelPropAsIdSerializer.class)
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -53,6 +52,20 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 	private String courseType; // N/T for 普通|实训
 	private String trainingType; // S/E for 校内实训|企业实训
 
+	@JsonIgnore
+	@ManyToMany
+	@JoinTable(name = "schedule_teacher")
+	List<Teacher> teachers;
+	@JsonIgnore
+	@ManyToMany
+	@JoinTable(name = "schedule_class")
+	List<Class> classes;
+	private byte classCount = 1, teacherCount = 1;
+	@JsonRawValue
+	private String teacherIds;
+	@JsonRawValue
+	private String classIds;
+
 	public long getId() {
 		return id;
 	}
@@ -61,28 +74,12 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 		this.id = id;
 	}
 
-	public Class getTheClass() {
-		return theClass;
-	}
-
-	public void setTheClass(Class theClass) {
-		this.theClass = theClass;
-	}
-
 	public Course getCourse() {
 		return course;
 	}
 
 	public void setCourse(Course course) {
 		this.course = course;
-	}
-
-	public Teacher getTeacher() {
-		return teacher;
-	}
-
-	public void setTeacher(Teacher teacher) {
-		this.teacher = teacher;
 	}
 
 	public String getTermId() {
@@ -179,24 +176,60 @@ public class Schedule extends BaseModel<Long> implements TermAware {
 		this.trainingType = trainingType;
 	}
 
-	public void recalcTimes() {
+	public void recalcRedundant() {
 		setTimeSpan((byte) (timeEnd - timeStart + 1));
 		setLessonSpan((byte) Math.ceil((timeEnd - timeStart + 1) / 2.0));
+		String tids = teachers.stream().map(Teacher::getId).map(Object::toString).collect(Collectors.joining(","));
+		String cids = classes.stream().map(Class::getId).map(Object::toString).collect(Collectors.joining(","));
+		teacherIds = "[" + tids + "]";
+		classIds = "[" + cids + "]";
 	}
 
-	public static Schedule of(long classId, String courseCode, byte weekno) {
-		Schedule ret = new Schedule();
-		ret.setTheClass(Class.of(classId));
-		ret.setCourse(Course.of(courseCode));
-		ret.setWeekno(weekno);
-		return ret;
+	public List<Teacher> getTeachers() {
+		return teachers;
 	}
 
-	public static Schedule of(ClassCourse classCourse, byte weekno) {
-		Schedule ret = new Schedule();
-		ret.setTheClass(classCourse.getTheClass());
-		ret.setCourse(classCourse.getCourse());
-		ret.setWeekno(weekno);
-		return ret;
+	public void setTeachers(List<Teacher> teachers) {
+		this.teachers = teachers;
+	}
+
+	public List<Class> getClasses() {
+		return classes;
+	}
+
+	public void setClasses(List<Class> classes) {
+		this.classes = classes;
+	}
+
+	public byte getClassCount() {
+		return classCount;
+	}
+
+	public void setClassCount(byte classCount) {
+		this.classCount = classCount;
+	}
+
+	public byte getTeacherCount() {
+		return teacherCount;
+	}
+
+	public void setTeacherCount(byte teacherCount) {
+		this.teacherCount = teacherCount;
+	}
+
+	public String getTeacherIds() {
+		return teacherIds;
+	}
+
+	public void setTeacherIds(String teacherIds) {
+		this.teacherIds = teacherIds;
+	}
+
+	public String getClassIds() {
+		return classIds;
+	}
+
+	public void setClassIds(String classIds) {
+		this.classIds = classIds;
 	}
 }

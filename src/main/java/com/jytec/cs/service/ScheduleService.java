@@ -20,10 +20,14 @@ public class ScheduleService extends ModelService<Schedule> {
 
 	@Transactional
 	public List<Schedule> search(ScheduleSearchParams params) {
-		Sql ql = new Sql().select("m").from("Schedule m").where() //@formatter:off
+		Sql ql = new Sql().select("m")//@formatter:off
+		.from("Schedule m")
+		.leftJoin("m.classes c")                    //.$(params.needJoinClasses())
+		.leftJoin("m.teachers t")                   //.$(params.needjoinTeachers())
+		.where() 
 			.apply(it -> applySearchParams(it, params))
 		.endWhere()
-		.orderBy("date,timeStart,m.site.id"); //@formatter:on
+		.orderBy("m.date,m.timeStart,m.site.id"); //@formatter:on
 		return dao.find(ql.toString(), ql.vars());
 	}
 
@@ -41,35 +45,39 @@ public class ScheduleService extends ModelService<Schedule> {
 			.eq("m.trainingType", params.trainingType)
 			.in("m.trainingType", params.trainingTypes)
 			.eq("m.date", params.date)
+			.eq("m.teacherCount", params.teacherCount)
+			.eq("m.classCount", params.classCount)
 			// special
 			.like("m.date", params.yearMonth, false, true)
 			.__("? Between m.timeStart And m.timeEnd", params.lesson)    .$(Variables.isNotEmpty(params.lesson))
 			// model-id
-			.eq("m.theClass.id", params.classId)
 			.eq("m.course.code", params.courseCode)
-			.eq("m.teacher.id", params.teacherId)
 			.eq("m.site.id", params.siteId)
-			.eq("m.theClass.major.id", params.majorId)
-			.eq("m.theClass.major.dept.id", params.deptId)
+			.eq("t.id", params.teacherId)
+			.eq("c.id", params.classId)
+			.eq("c.major.id", params.majorId)
+			.eq("c.deptId", params.deptId)
 			// join-fields
-			.eq("m.theClass.year", params.classYear)
+			.eq("c.year", params.classYear)
 			.eq("m.course.cate", params.courseCate)
 		;//@formatter:on
 	}
 
 	@Transactional
-	public List<Map<String, Object>> statistic(ScheduleStatisticParams statParams) {
-		String groupByClause = statParams.prepareAggFields().groupBy("m");
-		String groupByAsSelectItems = statParams.groupByAsSelectItems("m");
+	public List<Map<String, Object>> statistic(ScheduleStatisticParams params) {
+		String groupByClause = params.prepareAggFields().groupBy("m");
+		String groupByAsSelectItems = params.groupByAsSelectItems("m");
 		Sql ql = new Sql() //@formatter:off
 		.select()
 			.____(groupByAsSelectItems)
-			.____("count(*) as recordCount")                            .$(statParams.aggRecordCount)
-			.____("sum(m.timeSpan) as lessonTime")                      .$(statParams.aggLessonTime)
-			.____("sum(m.lessonSpan) as lessonCount")                   .$(statParams.aggLessonCount)
-		.from("Schedule m") 
+			.____("count(*) as recordCount")                            .$(params.aggRecordCount)
+			.____("sum(m.timeSpan) as lessonTime")                      .$(params.aggLessonTime)
+			.____("sum(m.lessonSpan) as lessonCount")                   .$(params.aggLessonCount)
+		.from("Schedule m")
+		.leftJoin("m.classes c")                                     .$(params.needJoinClasses())
+		.leftJoin("m.teachers t")                                    .$(params.needjoinTeachers())
 		.where() 
-			.apply(it -> applySearchParams(it, statParams))
+			.apply(it -> applySearchParams(it, params))
 		.endWhere()
 		.groupBy(groupByClause); //@formatter:on
 
@@ -77,17 +85,19 @@ public class ScheduleService extends ModelService<Schedule> {
 	}
 	
 	@Transactional
-	public Map<String, Object> statisticSummary(ScheduleStatisticParams statParams) {
-		statParams.prepareAggFields();
+	public Map<String, Object> statisticSummary(ScheduleStatisticParams params) {
+		params.prepareAggFields();
 		Sql ql = new Sql() //@formatter:off
 		.select()
-			.____(statParams.countDistinct("m"))
-			.____("count(*) as recordCount")                            .$(statParams.aggRecordCount)
-			.____("sum(m.timeSpan) as lessonTime")                      .$(statParams.aggLessonTime)
-			.____("sum(m.lessonSpan) as lessonCount")                   .$(statParams.aggLessonCount)
+			.____(params.countDistinct("m"))
+			.____("count(*) as recordCount")                            .$(params.aggRecordCount)
+			.____("sum(m.timeSpan) as lessonTime")                      .$(params.aggLessonTime)
+			.____("sum(m.lessonSpan) as lessonCount")                   .$(params.aggLessonCount)
 		.from("Schedule m") 
+		.leftJoin("m.classes c")                                     .$(params.needJoinClasses())
+		.leftJoin("m.teachers t")                                    .$(params.needjoinTeachers())
 		.where() 
-			.apply(it -> applySearchParams(it, statParams))
+			.apply(it -> applySearchParams(it, params))
 		.endWhere(); //@formatter:on
 
 		return dao.findUniqueMap(ql.toString(), ql.vars());
