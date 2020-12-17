@@ -153,7 +153,8 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 			StringBuilder sb = new StringBuilder();
 			String[] props = distinct.split(",");
 			for (String prop : props) {
-				String realProp = allowedGroupByProps.get(prop.trim());
+				prop = prop.trim();
+				String realProp = allowedGroupByProps.get(prop);
 				if (allowedCountDistinct.contains(prop) && realProp != null) {
 					if (sb.length() > 0) {
 						sb.append(",");
