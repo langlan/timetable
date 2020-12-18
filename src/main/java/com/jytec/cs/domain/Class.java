@@ -9,6 +9,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.jytec.cs.domain.helper.ModelPropAsIdSerializer;
@@ -32,6 +33,7 @@ public class Class extends BaseModel<Long> {
 	private short year; // 入学年
 	private byte classNo; // 班级号
 	private int size; // 学生人数
+	@JsonIgnore
 	private Integer idc;
 
 // Handle it when importing data.

@@ -7,6 +7,8 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(uniqueConstraints = { //
 		@UniqueConstraint(columnNames = { "code" }), //
@@ -23,6 +25,7 @@ public class Teacher extends BaseModel<Long> {
 	private String phone;
 	private String mail;
 	private boolean female;
+	@JsonIgnore
 	private Integer idc;
 
 	public long getId() {
