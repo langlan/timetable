@@ -210,6 +210,7 @@ public class ModelMappingHelper {
 				log.warn(msg);
 			}
 			Teacher ret = findteacherOrStageByName(teacherName, cell);
+			Assert.notNull(ret, "教师为空：" + cell.getAddress());
 			if (ret.getId() == 0) {
 				/////////////////////////////////////////////////////
 				Set<Cell> cells = teacherNotFoundExceptions.get(teacherName);
@@ -499,7 +500,7 @@ public class ModelMappingHelper {
 				Assert.isTrue(COURSE_TYPE_TRAINING.contentEquals(courseType), "Undefined Course Type");
 				countsOfTrainingByWeekno = ret;
 			}
-			List<Map<String, Object>> all = scheduleRespository.countsOfEachWeek(term.getId(), COURSE_TYPE_NORMAL);
+			List<Map<String, Object>> all = scheduleRespository.countsOfEachWeek(term.getId(), courseType);
 			for (Map<String, Object> e : all) {
 				ClassCourse cc = ClassCourse.of((long) e.get("classId"), (String) e.get("courseCode"));
 				ClassCourseWeek key = new ClassCourseWeek(cc, (byte) e.get("weekno"));
