@@ -179,7 +179,7 @@ public class ScheduleStatisticParams extends ScheduleSearchParams {
 	}
 
 	static Pattern CLASS_PROPS = Pattern.compile("classId|classYear|majorId|deptId");
-	static Pattern TEACHER_PROPS = Pattern.compile("classId|classYear|majorId|deptId");
+	static Pattern TEACHER_PROPS = Pattern.compile("teacherId");
 
 	@Override
 	public boolean needJoinClasses() {
