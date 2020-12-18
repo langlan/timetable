@@ -46,6 +46,9 @@ public class TitleInfo {
 			Assert.isTrue(mergedArea.getFirstColumn() == cell.getColumnIndex(), "Merging algorithm problems.");
 			TimeInfo start = timeInfo, end = timeInfos.get(mergedArea.getLastColumn());
 			if (start.dayOfWeek != end.dayOfWeek) {
+				if(cell==null || cellString(cell).isEmpty()) {
+					return start;
+				}
 				throw new IllegalArgumentException("未支持跨天的单元格合并！" + atLocaton(cell));
 			}
 			return new TimeInfo(start.dayOfWeek, start.timeStart, end.timeEnd);

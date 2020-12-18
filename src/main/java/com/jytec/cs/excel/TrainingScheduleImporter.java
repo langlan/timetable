@@ -88,6 +88,10 @@ public class TrainingScheduleImporter extends ScheduleImporter {
 				schedules.forEach(it -> {
 					it.setCourseType(Schedule.COURSE_TYPE_TRAINING);
 					it.setTrainingType(Schedule.TRAININGTYPE_SCHOOL);
+					String siteName = it.getSite().getName();
+					if(siteName!=null && siteName.contains("企业")) {
+						it.setTrainingType(Schedule.TRAININGTYPE_ENTERPRISE);
+					}
 				});
 
 				mhelper.stageAll(schedules);

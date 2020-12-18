@@ -215,8 +215,8 @@ public interface TextParser {
 		public List<Teacher> teachers;
 		public byte dayOfWeek;
 		public boolean resolveSuccess;
-		
-		private void assertReslveSuccess(){
+
+		private void assertReslveSuccess() {
 			if (!resolveSuccess) {
 				throw new IllegalStateException("存在班级选课未找到记录异常，此处不应被调用");
 			}
@@ -336,7 +336,7 @@ public interface TextParser {
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
 			String[] values = line.split(" ");
-			if (values.length != 3)
+			if (values.length < 3)
 				throw new IllegalArgumentException("import.excel.training-schedule :" + line);
 			ScheduledCourse schedule = new ScheduledCourse();
 			schedule.courseName = values[0].trim();
@@ -359,6 +359,18 @@ public interface TextParser {
 			if (timeRange != null) {
 				schedule.timeRange.timeStart = timeRange.timeStart;
 				schedule.timeRange.timeEnd = timeRange.timeEnd;
+			}
+			if (values.length > 3) {
+				String _timeRange = values[3];
+				Pattern p = Pattern.compile("\\((\\d+),\\s*(\\d+)\\)");
+				Matcher m = p.matcher(values[3]);
+				if(!m.matches()) {
+					throw new IllegalFormatException("错误的课时格式：" + _timeRange);
+				}else {
+					schedule.timeRange.timeStart = Byte.parseByte(m.group(1));
+					schedule.timeRange.timeEnd = Byte.parseByte(m.group(2));
+				}
+				
 			}
 			ret[i] = schedule;
 		}
