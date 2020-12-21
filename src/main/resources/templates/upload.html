@@ -209,9 +209,8 @@ blockquote.blockquote {
         </blockquote>
         
         <div th:if="${report}" class="alert alert-info">
-          <strong th:if="${preview}">已指定导入预览参数，未保存，以下为预期导入结果</strong>
+          <strong th:if="!${preview} and !${report.unsavedReason}">已执行保存！</strong>
           <pre th:text="${report}">导入报告</pre>
-          <strong th:if="not ${preview}">非预览，已执行保存！</strong>
         </div>
         
       </form>

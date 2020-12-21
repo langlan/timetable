@@ -14,6 +14,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +42,14 @@ public class SiteImporter extends AbstractImporter {
 		cols.scol("最终调换", (it, m) -> m.setDept(new Dept(it)));
 		cols.scol("多媒体改造", (it, m) -> m.setMultimedia(it));
 		cols.scol("校内实训基地名称", (it, m) -> m.setName4Training(it)).optional().withMerges();
+	}
+	
+	@Override
+	protected void doImport(Workbook wb, ImportContext context) {
+		super.doImport(wb, context);
+		if(context.params.preview) {
+			context.reports.unsavedReason = "已指定导入预览参数。";
+		}
 	}
 
 	@Override
@@ -110,7 +119,9 @@ public class SiteImporter extends AbstractImporter {
 						exist.setMemo(site.getMemo());
 						site = exist;
 					}
-					siteRepository.save(site);
+					if(!context.params.preview) {
+						siteRepository.save(site);	
+					}
 				} else {
 					log.info(rpt.log("忽略已存在: " + key));
 				}

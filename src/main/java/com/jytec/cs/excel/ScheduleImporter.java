@@ -61,10 +61,12 @@ public class ScheduleImporter extends AbstractImporter {
 
 		log.info("准备导入 Schedule 记录数：" + context.modelHelper.newSchedules.size());
 		if (!context.params.preview) {
-			context.modelHelper.saveStaged();
+			context.reports.unsavedReason = context.modelHelper.saveStaged();
 			scheduleRespository.flush();
 			authService.assignIdcs(); // for auto-created teachers
 			scheduleRespository.updateDateByTerm(context.params.term.getId());
+		}else {
+			context.reports.unsavedReason = "已指定导入预览参数。";
 		}
 	}
 

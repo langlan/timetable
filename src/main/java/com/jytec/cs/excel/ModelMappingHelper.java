@@ -96,11 +96,12 @@ public class ModelMappingHelper {
 		return this;
 	}
 
-	public void saveStaged() {
+	public String saveStaged() {
 		if (hasAnyClassCourseNotFountExceptions || hasAnyTeacherNotFoundExceptions || hasAnyTeacherNotMatchExceptions
 				|| hasAnySiteNotFoundExceptions) {
-			log.info("存在异常，不予保存！");
-			return;
+			String msg = "存在异常，不予保存！";
+			log.info(msg);
+			return msg;
 		}
 		deptRepository.saveAll(newDepts);
 		majorRepository.saveAll(newMajors);
@@ -117,6 +118,7 @@ public class ModelMappingHelper {
 		// schedule only
 		newSitesWithoutCodeIndexdByName.values().forEach(it -> autoCreateService.save(it));
 		scheduleRespository.saveAll(newSchedules);
+		return null;
 	}
 
 	private void initClassCoursesIndexedByNames() {

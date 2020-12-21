@@ -84,10 +84,12 @@ public class ClassCourseImporter extends AbstractImporter {
 	protected void doImport(Workbook wb, ImportContext context) {
 		super.doImport(wb, context);
 		if (!context.params.preview) {
-			context.modelHelper.saveStaged();
+			context.reports.unsavedReason = context.modelHelper.saveStaged();
 			authService.assignIdcs();
 			deptRepository.updateTypeOfNormal();
 			deptRepository.updateTypeOfElse();
+		}else {
+			context.reports.unsavedReason = "已指定导入预览参数。";
 		}
 	}
 

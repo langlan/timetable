@@ -12,6 +12,7 @@ import org.apache.logging.log4j.util.Strings;
 /** output for confirm or discard */
 public class ImportReport {
 	List<SheetImportReport> sheets = new LinkedList<>();
+	public String unsavedReason;
 
 	public void append(SheetImportReport sheetImportReport) {
 		sheets.add(sheetImportReport);
@@ -35,6 +36,11 @@ public class ImportReport {
 		sb.append(sheets.stream().mapToInt(it -> it.rowsTotal).sum());
 		sb.append("】");
 		sb.append("行");
+		if (unsavedReason != null) {
+			sb.append(" - ");
+			sb.append("未执行保存：");
+			sb.append(unsavedReason);
+		}
 		sb.append("\r\n");
 		for (SheetImportReport sheet : sheets) {
 			sb.append("===============\r\n");
