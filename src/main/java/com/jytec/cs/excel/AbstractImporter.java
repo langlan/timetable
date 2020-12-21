@@ -1,6 +1,7 @@
 package com.jytec.cs.excel;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import javax.transaction.Transactional;
 
@@ -11,10 +12,13 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.Assert;
 
+import com.jytec.cs.dao.TermRepository;
+import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.api.ImportParams;
 import com.jytec.cs.excel.api.ImportReport;
 import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
@@ -22,6 +26,7 @@ import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
 public abstract class AbstractImporter implements ApplicationContextAware {
 	protected final Log log = LogFactory.getLog(getClass());
 	protected ApplicationContext applicationContext;
+	protected @Autowired TermRepository termRepository;
 
 	/**
 	 * Prepare context.
@@ -34,6 +39,11 @@ public abstract class AbstractImporter implements ApplicationContextAware {
 	public ImportReport importFile(ImportParams params) throws EncryptedDocumentException, IOException {
 		Assert.notNull(params.file, "未指定导入文件。");
 		Assert.isTrue(params.file.exists(), "文件不存在！" + params.file.getAbsolutePath());
+		if (params.term != null) {
+			Optional<Term> oterm = termRepository.findById(params.term.getId());
+			Assert.isTrue(oterm.isPresent(), "不存在指定的学期记录：【" + params.term.getId() + "】");
+			params.term = oterm.get();
+		}
 
 		ImportContext context = new ImportContext();
 		log.debug("准备处理文件：" + params.file.getAbsolutePath());

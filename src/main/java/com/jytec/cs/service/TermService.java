@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
@@ -50,18 +51,35 @@ public class TermService {
 	 * @return
 	 */
 	@Transactional
-	public void initTermDate(short termYear, boolean autumn, Date firstWeek, int numberOfWeeks) {
+	public void initTermDate(Date firstWeek, int numberOfWeeks) {
 		Assert.notNull(firstWeek, "请选择一个日期将其所在周做为第一个学周！");
 		Assert.isTrue(COUNT_OF_WEEK_MIN <= numberOfWeeks && numberOfWeeks <= COUNT_OF_WEEK_MAX,
 				"周数【" + numberOfWeeks + "】超出可选范围【" + COUNT_OF_WEEK_MIN + "~" + COUNT_OF_WEEK_MAX + "】！");
 
-		Term term = autumn ? Term.ofAutumn(termYear) : Term.ofSpring(termYear); // also validated.
-		termRepository.findById(term.getId()).orElseGet(() -> term);
-
 		CalenderWrapper cw = Dates.wrapper().letMondayFirst()
 				.with(new SimpleDateFormat(com.jytec.cs.domain.Date.DATE_FORMAT));
-		term.setFirstDay(cw.go(firstWeek).goMonday().format());
-		term.setLastDay(cw.addWeek(numberOfWeeks - 1).goSunday().format());
+		int termYear = cw.go(firstWeek).getYear();
+		boolean isAutumn = cw.getMonth() > 6;
+		String firstDay = cw.go(firstWeek).goMonday().format();
+		String lastDay = cw.addWeek(numberOfWeeks - 1).goSunday().format();
+
+		Term term = isAutumn ? Term.ofAutumn(termYear) : Term.ofSpring(termYear); // also validated.
+		Optional<Term> oterm = termRepository.findById(term.getId());
+		if (oterm.isPresent()) {
+			Term oe = oterm.get();
+			if (oe.getFirstDay().equals(firstDay) && oe.getCountOfWeeks() == numberOfWeeks) {
+				return;
+			}
+			// 若缩小周数或改变首学周，删除其余部分
+			int dw = termRepository.deleteOutofRangeWeeks(oe.getId(), firstDay, lastDay);
+			int dd = termRepository.deleteOutofRangeDays(oe.getId(), firstDay, lastDay);
+			log.info("删除超出学周：" + dw);
+			log.info("删除超出学日：" + dd);
+			term = oe;
+		}
+
+		term.setFirstDay(firstDay);
+		term.setLastDay(lastDay);
 		term.setCountOfWeeks((byte) numberOfWeeks);
 
 		// validate overlapped
@@ -105,6 +123,15 @@ public class TermService {
 		dateRepository.saveAll(days);
 		termRepository.saveAndFlush(term);
 		log.info("Count for rebuilding schedule date: " + rebuildScheduleDate(term));
+	}
+	
+	@Transactional
+	public void deleteTermDate(String termId) {
+		Assert.isTrue(termId!=null && !termId.isEmpty(), "未指定要删除的学期记录！");
+		Optional<Term> oterm = termRepository.findById(termId);
+		Assert.isTrue(oterm.isPresent(), "未找到要删除的学期记录，id【" + termId + "】");
+		termRepository.delete(oterm.get());
+		log.info("Count for rebuilding schedule date: " + rebuildScheduleDate(oterm.get()));
 	}
 
 	@Transactional

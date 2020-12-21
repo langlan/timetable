@@ -19,6 +19,34 @@ public class ImportParams {
 	public boolean saveOnTeacherNotFound;
 	/** force save even not find, auto-create */
 	public boolean saveOnSiteNotFound;
+	
+	public void setTerm(String termId) {
+		this.term = Term.of(termId);
+	}
+	
+	public void setClassYear(int classYear) {
+		this.classYear = classYear;
+	}
+	
+	public void setPreview(boolean preview) {
+		this.preview = preview;
+	}
+	
+	public void setSaveOnClassCourseNotFound(boolean saveOnClassCourseNotFound) {
+		this.saveOnClassCourseNotFound = saveOnClassCourseNotFound;
+	}
+	
+	public void setSaveOnSiteNotFound(boolean saveOnSiteNotFound) {
+		this.saveOnSiteNotFound = saveOnSiteNotFound;
+	}
+	
+	public void setSaveOnTeacherNotFound(boolean saveOnTeacherNotFound) {
+		this.saveOnTeacherNotFound = saveOnTeacherNotFound;
+	}
+	
+	public void setSaveOnTeacherNotMatch(boolean saveOnTeacherNotMatch) {
+		this.saveOnTeacherNotMatch = saveOnTeacherNotMatch;
+	}
 
 	public void validate() {
 

@@ -3,13 +3,17 @@ package com.jytec.cs.excel;
 import static com.jytec.cs.excel.parse.Texts.atLocaton;
 import static com.jytec.cs.excel.parse.Texts.cellString;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.transaction.Transactional;
+
 import org.apache.logging.log4j.util.Strings;
+import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -26,6 +30,8 @@ import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.TextParser.ScheduledCourse;
 import com.jytec.cs.excel.TextParser.TimeRange;
 import com.jytec.cs.excel.TitleInfo.TimeInfo;
+import com.jytec.cs.excel.api.ImportParams;
+import com.jytec.cs.excel.api.ImportReport;
 import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
 import com.jytec.cs.excel.schedule.Keys;
 import com.jytec.cs.excel.schedule.Keys.CourseSiteTime;
@@ -36,12 +42,18 @@ public class ScheduleImporter extends AbstractImporter {
 	protected @Autowired ScheduleRepository scheduleRespository;
 	private @Autowired AuthService authService;
 	protected int defaultHeaderRowIndex = 1;
+	
+	@Transactional
+	@Override
+	public ImportReport importFile(ImportParams params) throws EncryptedDocumentException, IOException {
+		Assert.notNull(params.term, "参数学期不可为空！");
+		Assert.isTrue(params.classYear > 0, "参数年级不可为空！");
+		
+		return super.importFile(params);
+	}
 
 	@Override
 	protected void doImport(Workbook wb, ImportContext context) {
-		Assert.notNull(context.params.term, "参数学期不可为空！");
-		Assert.isTrue(context.params.classYear > 0, "参数年级不可为空！");
-
 		super.doImport(wb, context);
 		if (!(this instanceof TrainingScheduleImporter)) {
 			this.mergeClasses(context.modelHelper.newSchedules);

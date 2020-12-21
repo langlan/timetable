@@ -14,6 +14,7 @@ import static java.util.Calendar.YEAR;
 
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -28,7 +29,7 @@ public interface Dates {
 
 	/** create a instance of {@link CalenderWrapper} */
 	static CalenderWrapper wrapper() {
-		return new CalenderWrapper(Calendar.getInstance());
+		return new CalenderWrapper(Calendar.getInstance()).with(new SimpleDateFormat("yyyy-MM-dd"));
 	}
 
 	static Date of(int year, int month, int dayOfMonth) {

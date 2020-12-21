@@ -44,6 +44,13 @@ public class QueryTest {
 	}
 	
 	@Test
+	public void testMultipleFetchJoin() {
+		Query q = em.createQuery("Select s From Schedule s Left join Fetch s.teachers t Left Join Fetch s.classes c Where c.id=?1");
+		q.setParameter(1, 1L);
+		q.getResultList();
+	}
+	
+	@Test
 	public void testJPQLSubStr() {
 		Query q = em.createQuery("Select substr(m.date, 1, 7) from Schedule m Where m.id < 10");
 		@SuppressWarnings("unchecked")

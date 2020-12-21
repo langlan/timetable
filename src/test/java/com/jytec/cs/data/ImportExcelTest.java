@@ -33,7 +33,7 @@ public class ImportExcelTest {
 	private @Autowired ScheduleRepository scheduleRepository;
 	private @Autowired SiteRepository siteRepository;
 	private @Autowired AuthService authService;
-	int classYearFilter = 19;
+	int classYearFilter = 17;
 
 	@Test
 	public void testImport00ClassCourses() throws EncryptedDocumentException, IOException {
@@ -67,12 +67,15 @@ public class ImportExcelTest {
 
 	@Test
 	public void testImport021ScheduleOfTrainingCourse() throws EncryptedDocumentException, IOException {
-		File file = Files.of("/schedule-training-1.xlsx");
+		File file1 = Files.of("/schedule-training-1.xlsx");
+		File file2 = Files.of("/schedule-training-2.xlsx");
 		ImportParams params = ImportParams.create().term(TermSerivcelTest.TERM).classYear(classYearFilter);
 		params.saveOnAllErrorTypes();
 
-		ImportReport rpt = trainingScheduleImporter.importFile(params.file(file));
-		System.out.println(rpt);
+//		ImportReport rpt = trainingScheduleImporter.importFile(params.file(file1));
+//		System.out.println(rpt);
+		ImportReport rpt2 = trainingScheduleImporter.importFile(params.file(file2));
+		System.out.println(rpt2);
 	}
 
 	@Test

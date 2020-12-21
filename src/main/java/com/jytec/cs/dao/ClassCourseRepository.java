@@ -19,4 +19,6 @@ public interface ClassCourseRepository extends JpaRepository<ClassCourse, Long> 
 	@Query("Select CONCAT(cc.theClass.name, '-', cc.course.name), cc "
 			+ "From ClassCourse cc Where cc.termId=?1")
 	List<Object[]> findAllIndexedByNames(String termId);
+
+	int deleteAllByTermId(String termId);
 }

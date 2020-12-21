@@ -7,8 +7,14 @@ spring:
          charset: UTF-8
          enabled: true
          force: true
+   thymeleaf:
+      cache: false
+   cs:
+      upload:
+         dir: F://upload/
    datasource:
       url: jdbc:sqlite:F://timetable.db
+      # url: jdbc:sqlite:/usr/cs/data/timetable.db
       driverClassName: org.sqlite.JDBC
       username: 
       password:

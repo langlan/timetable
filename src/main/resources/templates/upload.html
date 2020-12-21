@@ -1,0 +1,291 @@
+<html xmlns:th="https://www.thymeleaf.org">
+
+<head>
+<meta charset="UTF-8">
+<title>Excel 文件上传与导入</title>
+<link rel="stylesheet" th:href="@{/webjars/bootstrap/4.3.1/css/bootstrap.min.css}">
+<script type="text/javascript" th:src="@{/webjars/jquery/3.0.0/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/4.3.1/js/bootstrap.min.js}"></script>
+
+<style type="text/css">
+/* form .row {
+	margin-bottom: 15px;
+} */
+.container .navbar{
+  margin: 1rem -1rem;
+}
+form label, form input{
+    line-height: 38px;
+}
+form a:hover {
+    text-decoration: none;
+}
+label.header{
+    font-weight: bold;
+}
+blockquote.blockquote {
+    font-size:14px;
+    border-left: 5px solid #d69c9a;
+    padding-left: 15px;
+}
+</style>
+<script type="text/javascript">
+	$(function() {
+		// use uploaded or upload new
+		$('#switch-file').click(function() {
+			$('.file-picker').toggle();
+		});
+		// show/hide unrelated params
+		$('input[name=fileType]').click(function(){
+			$('.view-opt').hide();
+			$('.view-opt.' + $(this).val()).show();
+		});
+		$('input[name=fileType]:checked').click();
+		
+		// term-init, term-del
+		// term: cascade term with term-init params.
+		$('#term-del select.terms').change(function(){
+			var o = $(this).find("option:checked");
+			var firstDay = o.data("first-day");
+			var numberOfWeeks = o.data("number-of-weeks")
+			$('#term-init input[name=firstWeek]').val(firstDay);
+			$('#term-init input[name=numberOfWeeks]').val(numberOfWeeks);
+		});
+	});
+	function confirmDel(){
+		//var btn = $('#del-form[type=submit]');
+		var termId = $("#del-form select[name=termId]").val();
+		var checked = $('#del-form input[name=fileTypes]:checked');
+		var checkedAny = checked.length>0;
+		if(!checkedAny){
+			alert("请选择要删除的数据类型！");
+			return false;
+		}else{
+			if(!termId && checked.filter("[value*=SCHEDULE], [value=CLASS_COURSE]").length>0){
+				alert("须为要删除的【教学任务或排课】数据指定学期！");
+				return false;
+			}
+			return confirm('确认要删除所选数据？');
+		}
+	}
+	function confirmInitTerm(){
+		var date = $('#term-init input[name=firstWeek]').val();
+		var nofw = $('#term-init input[name=numberOfWeeks]').val();
+		if(!nofw){
+			alert("请指定学周数");
+			return false;
+		}
+		if(!date){
+			alert("请为第一学周选择一个日期（该周内任意一天）");
+			return false;
+		}else{
+			var month = date.substr(5, 2);
+			if(month!="03" && month!="09"){
+				return confirm("首周位于月份【" + month +"】, 推荐首周位于 3（春季）或 9（秋季）月份，是否仍按此值？");				
+			}
+		}
+	}
+	function confirmDelTerm(){
+		if(!$('#term-init select[name=termId]').val()){
+			alert("请指定要删除的学期记录！")
+			return false;
+		}
+		return confirm("确认要删除所选学期及相关日历数据？");
+	}
+</script>
+</head>
+<body class="container">
+  <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">
+    <span class="navbar-brand">数据管理</span>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <div class="navbar-nav nav nav-tabs">
+        <a class="nav-item nav-link active" data-toggle="tab" href="#imp">上传与导入<span class="sr-only">(current)</span></a>
+        <a class="nav-item nav-link" data-toggle="tab" href="#del">数据清除</a>
+        <a class="nav-item nav-link" data-toggle="tab" href="#term-init">学期日历初始化</a>
+      </div>
+    </div>
+  </nav>
+  <div class="row alert alert-warning alert-dismissible" th:if="${message}">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+    <span th:text="${message}"></span>
+  </div>
+  <div class="tab-content">
+    <div class="tab-pane active" id="imp">
+      <form method="POST" enctype="multipart/form-data" th:action="@{/data}">
+        <div class="row">
+          <div class="col-lg-1">
+            <label class="header">文件内容</label>
+          </div>
+          <div class="col-lg-5">
+            <label> <input th:checked="${fileType eq 'CLASS_COURSE'}" type="radio" name="fileType"
+              value="CLASS_COURSE"> 教学任务
+            </label> <label> <input th:checked="${fileType eq 'SITE'}" type="radio" name="fileType" value="SITE">
+              上课地点
+            </label> <label> <input th:checked="${fileType eq 'SCHEDULE'}" type="radio" name="fileType" value="SCHEDULE">
+              理论排课
+            </label> <label> <input th:checked="${fileType eq 'SCHEDULE_TRAINING'}" type="radio" name="fileType"
+              value="SCHEDULE_TRAINING"> 实训排课
+            </label> ｜ <label><input th:checked="${preview}" type="checkbox" name="preview" value="true" style="color: orange;"> 导入预览</label>
+            <!-- /input-group -->
+          </div>
+    
+          <div class="col-lg-5">
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <button th:if="${originalFileName}" class="input-group-text" type="button" id="switch-file" title="重新上传/使用之前上传的文件">
+                  <span aria-hidden="true">@</span>
+                </button>
+              </div>
+              <input th:if="${originalFileName}" disabled="disabled" class="form-control file-picker" th:value="${originalFileName}">
+              <input class="form-control file-picker" th:style="${originalFileName} ? 'display: none;' : ''" type="file"
+              name="ufile"
+              accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">          
+            </div>
+          </div>
+          <div class="col-lg-1">
+            <button class="btn btn-primary float-right" type="submit">确定</button>
+          </div>
+        </div>
+        <!-- /.row -->
+        <div class="row">
+          <div class="col-lg-1 view-opt SCHEDULE SCHEDULE_TRAINING CLASS_COURSE" style="display: none;">
+            <label for="term" class="header">所属学期</label>
+          </div>
+          <div class="col-lg-3 view-opt SCHEDULE SCHEDULE_TRAINING CLASS_COURSE" style="display: none;">
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <a class="input-group-text" onclick="$('.nav-link[href=\'#term-init\']').click()">+</a>
+              </div>
+              <select class="custom-select" name="term">
+                  <option th:each="t: ${terms}" th:value="${t.id}" th:text="${t.name}">One</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-lg-1 view-opt SCHEDULE SCHEDULE_TRAINING" style="display: none;">
+            <label for="class-year" class="header">班级年级</label>
+          </div>
+          <div class="col-lg-1 view-opt SCHEDULE SCHEDULE_TRAINING" style="display: none;">
+            <select class="custom-select" name="classYear" id="class-year">
+                <option th:each="y: ${years}" th:value="${y}" th:text="${y}" th:selected="${y eq classYear}">18</option>
+            </select>
+          </div>
+        </div>
+        <div class="row view-opt SCHEDULE SCHEDULE_TRAINING" style="display: none;">
+          <div class="col-lg-1">
+            <label class="header">错误控制</label>
+          </div>
+          <div class="col-lg-11">
+            <a class="badge" style="padding: .375rem .75rem;cursor:pointer;" onclick="$('blockquote').toggle();">?</a>
+            <label class="checkbox-inline" title="选中将跳过这些排课数据"> <input th:checked="${saveOnClassCourseNotFound}"
+              type="checkbox" name="saveOnClassCourseNotFound" value="true"> 跳过无法找到班级选课的记录
+            </label> <label class="checkbox-inline"> <input th:checked="${saveOnTeacherNotMatch}" type="checkbox"
+              name="saveOnTeacherNotMatch" value="true"> 忽略教师匹配错误
+            </label> <label class="checkbox-inline"> <input th:checked="${saveOnTeacherNotFound}" type="checkbox"
+              name="saveOnTeacherNotFound" value="true"> 忽略无法找到教师
+            </label> <label class="checkbox-inline"> <input th:checked="${saveOnSiteNotFound}" type="checkbox"
+              name="saveOnSiteNotFound" value="true"> 忽略无法找到上课地点
+            </label>
+          </div>
+        </div>
+        
+        <blockquote class="blockquote" style="display: none;">
+          <strong>关于（导入排课数据时的）错误控制：</strong>
+          <ul>
+            <li>默认情况（不忽略任何错误）下，一旦有意外错误出现，将不执行保存。</li>
+            <li><strong>跳过无法找到班级选课</strong>：选中时，将跳过这些数据，继续导入其它。</li>
+            <li><strong>忽略教师（与选课记录）匹配错误</strong>：选中时，仍然执行导入。</li>
+            <li>因为现有基础数据不全，或因拼写错误故可能出现教师或上课地点无法找到：
+              <ul>
+                <li><strong>忽略老师无法找到</strong>：选中时，导入时将自动创按名称创建教师记录。</li>
+                <li><strong>忽略上课地点无法找到</strong>：选中时，导入时将自动创按名称创建上课地点记录。</li>
+               </ul>
+            </li>
+          </ul>
+        </blockquote>
+        
+        <div th:if="${report}" class="alert alert-info">
+          <strong th:if="${preview}">已指定导入预览参数，未保存，以下为预期导入结果</strong>
+          <pre th:text="${report}">导入报告</pre>
+          <strong th:if="not ${preview}">非预览，已执行保存！</strong>
+        </div>
+        
+      </form>
+    </div>
+    
+    <div class="tab-pane" id="del">
+      <form method="POST" th:action="@{/data/del}" id="del-form">
+        <div class="row">
+          <div class="col-lg-3">
+            <label class="header"> 学期 <select name="termId" class="custom-select terms" style="display: inline-block;width: auto;">
+                  <option value="">选择数据学期</option>
+                  <option th:each="t: ${terms}"  th:value="${t.id}" th:text="${t.name}">One</option>
+              </select></label>
+          </div>
+          <div class="col-lg-1">
+            <label class="header">数据类型</label>
+          </div>
+          <div class="col-lg-5">
+            <label> <input th:checked="${fileType eq 'CLASS_COURSE'}" type="checkbox" name="fileTypes"
+              value="CLASS_COURSE"> 教学任务
+            </label> <label> <input th:checked="${fileType eq 'SITE'}" type="checkbox" name="fileTypes" value="SITE">
+              上课地点
+            </label> <label> <input th:checked="${fileType eq 'SCHEDULE'}" type="checkbox" name="fileTypes" value="SCHEDULE">
+              理论排课
+            </label> <label> <input th:checked="${fileType eq 'SCHEDULE_TRAINING'}" type="checkbox" name="fileTypes"
+              value="SCHEDULE_TRAINING"> 实训排课
+            </label> 
+          </div>
+         
+          <div class="col-lg-1">
+            <button class="btn btn-primary float-right" type="submit" onclick="return confirmDel()">删除</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <div class="tab-pane" id="term-init">
+      <form method="POST" th:action="@{/data/term-init}" id="term-init">
+        <div class="row">
+          <div class="col-lg-3">
+            <label>第一学周 <input class="form-control" type="date" name="firstWeek" style="display: inline-block;width: auto;"></label>
+          </div>
+          <div class="col-lg-3">
+            <label>学周数 <input class="form-control" type="number" name="numberOfWeeks" min="10" max="25" value="17" style="display: inline-block;width: auto;"></label>
+          </div>
+          <div class="col-lg-3">
+            <button class="btn btn-primary float-right" type="submit" onclick="return confirmInitTerm()">初始化/更改</button>
+          </div>
+        </div>
+      </form>
+      <form method="POST" th:action="@{/data/term-del}" id="term-del">
+        <div class="row">
+          <div class="col-lg-6">
+            <label>现有学期 <select name="termId" class="custom-select terms" style="display: inline-block;width: auto;">
+                  <option value="">选择一个现有现有记录</option>
+                  <option th:each="t: ${terms}" 
+                    th:data-first-day="${t.firstDay}" 
+                    th:data-last-day="${t.lastDay}" 
+                    th:data-number-of-weeks="${t.countOfWeeks}"
+                    th:value="${t.id}" th:text="${t.name}">One</option>
+              </select></label>
+          </div>
+          <div class="col-lg-3">
+            <button class="btn btn-primary float-right" type="submit" onclick="return confirmDelTerm()">删除学期记录</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  
+  </div>
+
+  <!--/*
+		 th:selected="${t.firstDay le currDate && t.lastDay ge currDate}"
+	*/-->
+
+</body>
+</html>

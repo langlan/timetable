@@ -53,4 +53,6 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 			+ "Where s.termId=?1")
 	int updateDateByTerm(String termId);
 
+	int deleteAllByTermIdAndCourseType(String termId, String courseTypeNormal);
+
 }

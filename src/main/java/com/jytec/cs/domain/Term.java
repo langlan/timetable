@@ -1,9 +1,13 @@
 package com.jytec.cs.domain;
 
+import java.util.regex.Pattern;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
 import org.springframework.util.Assert;
+
+import com.jytec.cs.excel.parse.Regex;
 
 @Entity
 public class Term extends BaseModel<String> {
@@ -100,5 +104,21 @@ public class Term extends BaseModel<String> {
 		}
 
 		void setTermId(String termId);
+	}
+
+	static final Pattern YEAR_MONTH = Pattern.compile("(\\d{4})[^\\d]*(\\d+)");
+	
+	public static Term of(String termId) {
+		String[] groups = Regex.groups(YEAR_MONTH, termId);
+		if (groups != null) {
+			Term ret = new Term();
+			short year = Short.parseShort(groups[1]);
+			byte month = Byte.parseByte(groups[2]);
+			// ret.setId(year + "0" + month);
+			ret.setTermYear(year);
+			ret.setTermMonth(month);
+			return ret;
+		}
+		return null;
 	}
 }

@@ -20,7 +20,7 @@ public class TermSerivcelTest {
 
 	@Test
 	public void testInitWeekAndDate() {
-		termService.initTermDate(TERM_YEAR, true, FIRST_WEEK, NUMBER_OF_WEEKS);
+		termService.initTermDate(FIRST_WEEK, NUMBER_OF_WEEKS);
 	}
 
 }

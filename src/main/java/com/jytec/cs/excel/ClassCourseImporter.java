@@ -6,6 +6,7 @@ import static java.lang.String.valueOf;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,12 +20,16 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import javax.transaction.Transactional;
+
 import org.apache.logging.log4j.util.Strings;
+import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import com.jytec.cs.dao.DeptRepository;
 import com.jytec.cs.domain.Class;
@@ -35,6 +40,8 @@ import com.jytec.cs.domain.Major;
 import com.jytec.cs.domain.Teacher;
 import com.jytec.cs.domain.Term;
 import com.jytec.cs.excel.ModelMappingHelper.StagedCounts;
+import com.jytec.cs.excel.api.ImportParams;
+import com.jytec.cs.excel.api.ImportReport;
 import com.jytec.cs.excel.api.ImportReport.SheetImportReport;
 import com.jytec.cs.excel.parse.AbstractParseResult;
 import com.jytec.cs.excel.parse.Columns;
@@ -65,10 +72,18 @@ public class ClassCourseImporter extends AbstractImporter {
 		cols.scol("教师姓名", (v, r) -> r.teacherNames = v); // F-5-教师姓名
 	}
 
+	@Transactional
+	@Override
+	public ImportReport importFile(ImportParams params) throws EncryptedDocumentException, IOException {
+		Assert.notNull(params.term, "参数学期不可为空！");
+
+		return super.importFile(params);
+	}
+
 	@Override
 	protected void doImport(Workbook wb, ImportContext context) {
 		super.doImport(wb, context);
-		if (context.params.preview) {
+		if (!context.params.preview) {
 			context.modelHelper.saveStaged();
 			authService.assignIdcs();
 			deptRepository.updateTypeOfNormal();
@@ -116,6 +131,7 @@ public class ClassCourseImporter extends AbstractImporter {
 		log.info(rpt.log("新增教师数：" + c.teachers + ", 共解析：" + staging.countTeachers()));
 		log.info(rpt.log(
 				"新增班级选课数：" + c.classCourses + ", 共解析：" + staging.classCoursesIndexedByClassNameAndCourseCode.size()));
+		rpt.rowsReady = c.classCourses;
 	}
 
 	static class ParseResult extends AbstractParseResult {
